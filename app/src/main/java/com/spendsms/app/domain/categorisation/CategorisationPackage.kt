@@ -1,4 +1,4 @@
 package com.spendsms.app.domain.categorisation
 
-/** Placeholder for categorisation domain logic. */
+/** Domain package marker for categorisation. */
 object CategorisationPackage

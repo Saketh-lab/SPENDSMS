@@ -9,6 +9,7 @@ import com.spendsms.app.data.room.SpendSmsDatabase
 import com.spendsms.app.domain.dashboard.DashboardResult
 import com.spendsms.app.domain.dashboard.SubscriptionTotals
 import com.spendsms.app.domain.merchant.Merchant
+import com.spendsms.app.domain.merchant.MerchantNormalizer
 import com.spendsms.app.domain.model.AnalysisPeriod
 import com.spendsms.app.domain.model.Confidence
 import com.spendsms.app.domain.model.CorrectionField
@@ -67,7 +68,7 @@ class RoomRepositoryTest {
         db = SpendSmsDatabase.buildInMemory(context)
         transactions = RoomTransactionRepository(db, db.transactionDao())
         categories = RoomCategoryRepository(db.categoryDao())
-        merchants = RoomMerchantRepository(db.transactionDao())
+        merchants = RoomMerchantRepository(db.transactionDao(), MerchantNormalizer())
         corrections = RoomUserCorrectionRepository(db.userCorrectionDao())
         subscriptions = RoomSubscriptionRepository(db.subscriptionDao())
         scans = RoomScanStateRepository(db.scanStateDao())
@@ -144,7 +145,7 @@ class RoomRepositoryTest {
             assertThat(found?.displayName).isEqualTo("Shop")
 
             val resolved = merchants.resolve("New Place", institution = "Bank")
-            assertThat(resolved.key.value).isEqualTo("bank|new place")
+            assertThat(resolved.key.value).isEqualTo("new place")
             assertThat(resolved.displayName).isEqualTo("New Place")
         }
     }
