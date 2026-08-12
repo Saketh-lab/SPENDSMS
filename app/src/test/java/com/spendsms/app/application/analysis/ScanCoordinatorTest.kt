@@ -452,6 +452,15 @@ private class InMemoryScanStateRepository : ScanStateRepository {
     override suspend fun findActive(): ScanState? =
         rows.values.firstOrNull { it.status == ScanStatus.PENDING || it.status == ScanStatus.RUNNING }
 
+    override suspend fun findResumable(): ScanState? =
+        rows.values
+            .filter {
+                it.status == ScanStatus.PENDING ||
+                    it.status == ScanStatus.RUNNING ||
+                    it.status == ScanStatus.INTERRUPTED
+            }
+            .maxByOrNull { it.updatedAt.toEpochMillis }
+
     override suspend fun findLatestCompleted(): ScanState? =
         rows.values.filter { it.status == ScanStatus.COMPLETED }.maxByOrNull { it.updatedAt.toEpochMillis }
 

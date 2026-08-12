@@ -18,7 +18,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class TransactionFingerprintFactory @Inject constructor(
-    private val policy: DuplicatePolicy = DuplicatePolicy.Phase0,
+    private val policy: DuplicatePolicy,
 ) {
 
     fun fingerprint(classified: ClassifiedTransaction): TransactionFingerprint {

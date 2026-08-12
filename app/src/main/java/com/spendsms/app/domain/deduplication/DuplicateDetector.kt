@@ -16,7 +16,7 @@ import kotlin.math.abs
 @Singleton
 class DuplicateDetector @Inject constructor(
     private val fingerprintFactory: TransactionFingerprintFactory,
-    private val policy: DuplicatePolicy = DuplicatePolicy.Phase0,
+    private val policy: DuplicatePolicy,
 ) {
 
     fun evaluate(

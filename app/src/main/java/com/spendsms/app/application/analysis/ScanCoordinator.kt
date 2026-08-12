@@ -231,12 +231,16 @@ class ScanCoordinator @Inject constructor(
             )
             return ScanResult.Completed(completed, isolatedFailures)
         } catch (e: CancellationException) {
-            persistInterrupted(
-                state = state,
-                isolatedFailures = isolatedFailures,
-                reason = ScanInterruptReason.COROUTINE_CANCELLED,
-                onProgress = onProgress,
-            )
+            if (cancelRequested.contains(state.id.value)) {
+                persistCancelled(state, isolatedFailures, onProgress)
+            } else {
+                persistInterrupted(
+                    state = state,
+                    isolatedFailures = isolatedFailures,
+                    reason = ScanInterruptReason.COROUTINE_CANCELLED,
+                    onProgress = onProgress,
+                )
+            }
             throw e
         } catch (e: Exception) {
             return persistFailed(

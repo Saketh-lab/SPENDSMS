@@ -25,6 +25,16 @@ interface ScanStateDao {
     @Query(
         """
         SELECT * FROM scan_state
+        WHERE status IN ('PENDING', 'RUNNING', 'INTERRUPTED')
+        ORDER BY updated_at DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun findResumable(): ScanStateEntity?
+
+    @Query(
+        """
+        SELECT * FROM scan_state
         WHERE status = 'COMPLETED'
         ORDER BY completed_at DESC, updated_at DESC
         LIMIT 1

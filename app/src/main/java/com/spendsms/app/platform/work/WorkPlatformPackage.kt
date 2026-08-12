@@ -1,4 +1,4 @@
 package com.spendsms.app.platform.work
 
-/** Placeholder for WorkManager worker types. */
+/** WorkManager unique-scan worker and scheduler. */
 object WorkPlatformPackage

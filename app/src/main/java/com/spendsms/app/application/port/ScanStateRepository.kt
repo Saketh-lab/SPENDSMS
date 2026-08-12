@@ -15,6 +15,12 @@ interface ScanStateRepository {
     /** Returns PENDING or RUNNING scan if one exists. */
     suspend fun findActive(): ScanState?
 
+    /**
+     * Latest scan that can continue after process death or interruption
+     * (`PENDING`, `RUNNING`, or `INTERRUPTED`).
+     */
+    suspend fun findResumable(): ScanState?
+
     suspend fun findLatestCompleted(): ScanState?
 
     suspend fun save(state: ScanState): ScanState

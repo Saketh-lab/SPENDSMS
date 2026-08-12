@@ -257,6 +257,44 @@ class RoomRepositoryTest {
     }
 
     @Test
+    fun scanState_findResumable_includesInterrupted_notCompleted() {
+        runBlocking {
+            val period = AnalysisPeriod(EpochMillis.of(1L), EpochMillis.of(2L))
+            scans.save(
+                ScanState(
+                    id = ScanId.of("done"),
+                    period = period,
+                    lastProcessedMessageId = "m9",
+                    parserVersion = ParserVersion.of("v1"),
+                    status = ScanStatus.COMPLETED,
+                    processedCount = 9,
+                    acceptedCount = 4,
+                    startedAt = EpochMillis.of(10L),
+                    completedAt = EpochMillis.of(20L),
+                    updatedAt = EpochMillis.of(20L),
+                ),
+            )
+            scans.save(
+                ScanState(
+                    id = ScanId.of("paused"),
+                    period = period,
+                    lastProcessedMessageId = "m4",
+                    parserVersion = ParserVersion.of("v1"),
+                    status = ScanStatus.INTERRUPTED,
+                    processedCount = 4,
+                    acceptedCount = 2,
+                    startedAt = EpochMillis.of(10L),
+                    completedAt = null,
+                    updatedAt = EpochMillis.of(30L),
+                ),
+            )
+            assertThat(scans.findActive()).isNull()
+            assertThat(scans.findResumable()?.id?.value).isEqualTo("paused")
+            assertThat(scans.findResumable()?.lastProcessedMessageId).isEqualTo("m4")
+        }
+    }
+
+    @Test
     fun dashboardCache_roundTripsAggregatesWithoutSms() {
         runBlocking {
             val tx = sampleTx("dash-1", "fp-dash")

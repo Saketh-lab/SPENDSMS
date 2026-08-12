@@ -20,6 +20,9 @@ class RoomScanStateRepository @Inject constructor(
     override suspend fun findActive(): ScanState? =
         scanStateDao.findActive()?.toDomain()
 
+    override suspend fun findResumable(): ScanState? =
+        scanStateDao.findResumable()?.toDomain()
+
     override suspend fun findLatestCompleted(): ScanState? =
         scanStateDao.findLatestCompleted()?.toDomain()
 

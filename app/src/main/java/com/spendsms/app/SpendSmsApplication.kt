@@ -10,7 +10,7 @@ import javax.inject.Inject
  * Application entry point.
  *
  * WorkManager is configured through [Configuration.Provider] so Hilt can
- * inject workers later. Product workers are not registered in this step.
+ * inject [androidx.hilt.work.HiltWorker] implementations such as the SMS scan worker.
  */
 @HiltAndroidApp
 class SpendSmsApplication : Application(), Configuration.Provider {
