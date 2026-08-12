@@ -3,7 +3,7 @@ package com.spendsms.app.domain.semantics
 /**
  * How a classified transaction contributes to dashboard spending totals.
  *
- * Dashboard math (Prompt 11+) sums these flags; this layer only decides them.
+ * Dashboard math (Prompt 12) sums these flags; this layer only decides them.
  */
 enum class SpendingRole {
     /** Ordinary debit/cash-out: adds to gross and net spending. */

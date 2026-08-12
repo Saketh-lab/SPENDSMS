@@ -15,6 +15,26 @@ data class Money(
         }
     }
 
+    operator fun plus(other: Money): Money {
+        require(currency == other.currency) {
+            "Cannot add ${other.currency.code} to ${currency.code}"
+        }
+        return Money(amountMinorUnits + other.amountMinorUnits, currency)
+    }
+
+    /**
+     * Subtracts [other], flooring at zero so dashboard net spending never goes negative.
+     */
+    fun minusFlooringAtZero(other: Money): Money {
+        require(currency == other.currency) {
+            "Cannot subtract ${other.currency.code} from ${currency.code}"
+        }
+        return Money(
+            amountMinorUnits = (amountMinorUnits - other.amountMinorUnits).coerceAtLeast(0L),
+            currency = currency,
+        )
+    }
+
     companion object {
         fun zero(currency: CurrencyCode = CurrencyCode.INR): Money =
             Money(amountMinorUnits = 0L, currency = currency)
