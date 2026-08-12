@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "parserVersion": "regression-2026.08.12.0",
+  "rulesVersion": "regression-rules-1",
+  "institutions": [
+    {
+      "institution": "Example Bank",
+      "senderPatterns": ["EX-BANK", "EXBANK"],
+      "transactionPatterns": [
+        {
+          "id": "example_debit_v1",
+          "type": "DEBIT",
+          "regex": "Rs\\.?\\s?(?<amount>[0-9,]+(?:\\.[0-9]{1,2})?)\\s+debited.*?(?:at|to)\\s+(?<merchant>[A-Za-z0-9 ._-]+?)(?:\\s+on\\s+(?<date>\\d{2}[-/]\\d{2}[-/]\\d{2,4}))?(?:\\.|\\s|$)",
+          "amountGroup": "amount",
+          "merchantGroup": "merchant",
+          "currencyGroup": null,
+          "referenceGroup": null,
+          "dateGroup": "date"
+        },
+        {
+          "id": "example_credit_v1",
+          "type": "CREDIT",
+          "regex": "Rs\\.?\\s?(?<amount>[0-9,]+(?:\\.[0-9]{1,2})?)\\s+credited",
+          "amountGroup": "amount",
+          "merchantGroup": null,
+          "currencyGroup": null,
+          "referenceGroup": null,
+          "dateGroup": null
+        },
+        {
+          "id": "example_refund_v1",
+          "type": "REFUND",
+          "regex": "Rs\\.?\\s?(?<amount>[0-9,]+(?:\\.[0-9]{1,2})?)\\s+refunded.*?(?:from|by)\\s+(?<merchant>[A-Za-z0-9 ._-]+)",
+          "amountGroup": "amount",
+          "merchantGroup": "merchant",
+          "currencyGroup": null,
+          "referenceGroup": null,
+          "dateGroup": null
+        },
+        {
+          "id": "example_transfer_v1",
+          "type": "TRANSFER",
+          "regex": "Rs\\.?\\s?(?<amount>[0-9,]+(?:\\.[0-9]{1,2})?)\\s+transferred\\s+to\\s+(?<merchant>[A-Za-z0-9_]+)(?:\\s+Ref(?:erence)?[:\\s]*(?<reference>[A-Za-z0-9-]+))?",
+          "amountGroup": "amount",
+          "merchantGroup": "merchant",
+          "currencyGroup": null,
+          "referenceGroup": "reference",
+          "dateGroup": null
+        }
+      ]
+    },
+    {
+      "institution": "Demo UPI Bank",
+      "senderPatterns": ["DEMOUPI", "DM-UPI"],
+      "transactionPatterns": [
+        {
+          "id": "demo_upi_debit_v1",
+          "type": "DEBIT",
+          "regex": "INR\\s(?<amount>[0-9,]+(?:\\.[0-9]{1,2})?)\\s+sent\\s+to\\s+(?<merchant>[A-Za-z0-9 @._-]+)\\s+via\\s+UPI.*?UPI Ref[:\\s]+(?<reference>[0-9]+)",
+          "amountGroup": "amount",
+          "merchantGroup": "merchant",
+          "currencyGroup": null,
+          "referenceGroup": "reference",
+          "dateGroup": null
+        }
+      ]
+    },
+    {
+      "institution": "Ambiguity Bank A",
+      "senderPatterns": ["AMBIG"],
+      "transactionPatterns": [
+        {
+          "id": "ambig_a_debit",
+          "type": "DEBIT",
+          "regex": "Rs\\.?\\s?(?<amount>[0-9,]+(?:\\.[0-9]{1,2})?)\\s+debited\\s+for\\s+(?<merchant>ALPHA)",
+          "amountGroup": "amount",
+          "merchantGroup": "merchant",
+          "currencyGroup": null,
+          "referenceGroup": null,
+          "dateGroup": null
+        }
+      ]
+    },
+    {
+      "institution": "Ambiguity Bank B",
+      "senderPatterns": ["AMBIG"],
+      "transactionPatterns": [
+        {
+          "id": "ambig_b_debit",
+          "type": "DEBIT",
+          "regex": "Rs\\.?\\s?(?<amount>[0-9,]+(?:\\.[0-9]{1,2})?)\\s+debited\\s+for\\s+(?<merchant>BETA)",
+          "amountGroup": "amount",
+          "merchantGroup": "merchant",
+          "currencyGroup": null,
+          "referenceGroup": null,
+          "dateGroup": null
+        }
+      ]
+    }
+  ]
+}

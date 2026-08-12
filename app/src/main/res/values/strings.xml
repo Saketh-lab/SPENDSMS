@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">SpendSMS</string>
+    <string name="foundation_placeholder_title">SpendSMS</string>
+    <string name="foundation_placeholder_body">Phase-0 foundation is ready. Product features are not implemented yet.</string>
+</resources>

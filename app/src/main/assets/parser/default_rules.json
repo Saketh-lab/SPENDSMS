@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "parserVersion": "bundled-2026.08.12.0",
+  "rulesVersion": "bundled-rules-1",
+  "institutions": [
+    {
+      "institution": "Example Bank",
+      "senderPatterns": ["EX-BANK", "EXBANK"],
+      "transactionPatterns": [
+        {
+          "id": "example_debit_v1",
+          "type": "DEBIT",
+          "regex": "Rs\\.?\\s?(?<amount>[0-9,]+(?:\\.[0-9]{1,2})?)\\s+debited.*?(?:at|to)\\s+(?<merchant>[A-Za-z0-9 ._-]+)",
+          "amountGroup": "amount",
+          "merchantGroup": "merchant",
+          "currencyGroup": null,
+          "referenceGroup": null,
+          "dateGroup": null
+        },
+        {
+          "id": "example_credit_v1",
+          "type": "CREDIT",
+          "regex": "Rs\\.?\\s?(?<amount>[0-9,]+(?:\\.[0-9]{1,2})?)\\s+credited",
+          "amountGroup": "amount",
+          "merchantGroup": null,
+          "currencyGroup": null,
+          "referenceGroup": null,
+          "dateGroup": null
+        }
+      ]
+    }
+  ]
+}

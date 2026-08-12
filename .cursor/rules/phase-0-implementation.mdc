@@ -1,0 +1,52 @@
+---
+description: SpendSMS Phase-0 implementation workflow, constraints, and reporting
+alwaysApply: true
+---
+
+# SpendSMS Phase-0 Implementation Rules
+
+Apply these rules to every implementation task in this repository.
+
+## Before coding
+
+1. Read the approved Step-0 through Step-4 documents in `docs/` (source of truth):
+   - `docs/Step-0_Idea.md`
+   - `docs/Step-1_PRD.md`
+   - `docs/Step-2_System_Architecture.md`
+   - `docs/Step-3 Service_and_Database.md`
+   - `docs/Step-4 API Contract.md`
+   - `docs/OpenAPI.yaml`
+2. Inspect the current repository and prior implementation. Preserve correct existing work and previously approved decisions.
+3. Do not redesign architecture established by the approved documents.
+4. If docs leave a meaningful implementation choice open, briefly explain realistic options/tradeoffs and choose the simplest Phase-0-compatible solution.
+5. Implement only the slice requested in the current prompt. Do not proactively implement later steps.
+
+## Phase-0 constraints (preserve)
+
+- Raw SMS stays on-device
+- Room is the financial system of record
+- Parser rules are signed, versioned declarative data
+- AWS is a thin serverless control/observability plane
+- No cloud transaction history
+- No user accounts
+- No microservices
+- No RDS
+- No Redis
+- No Phase-1/Phase-2 functionality
+
+## Boundaries and verification
+
+6. Keep architectural dependency boundaries from Steps 2–3 intact.
+7. After implementation, run relevant build/tests/checks and fix failures introduced by the change.
+
+## Finish report
+
+Briefly report:
+
+- Files changed
+- Implementation completed
+- Tests/checks and results
+- Meaningful tradeoffs/assumptions
+- Blockers or source-document contradictions
+
+Then stop after the requested slice and wait for the next prompt.

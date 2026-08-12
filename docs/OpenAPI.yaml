@@ -1,0 +1,481 @@
+openapi: 3.0.3
+
+info:
+title: SpendSMS MVP API
+version: 1.0.0
+description: |
+Minimal Phase-0 API for SpendSMS.
+
+```
+The Android device remains the system of record for SMS-derived
+financial data. Raw SMS, transaction history, amounts, merchants,
+account identifiers, transaction references, categories, subscriptions,
+and other financial history are prohibited from general API payloads.
+
+Parser manifests, parser bundles, non-sensitive configuration, and
+public/legal content are delivered through S3 + CloudFront rather than
+this API.
+```
+
+tags:
+
+* name: Telemetry
+* name: Support
+
+paths:
+/v1/telemetry/batch:
+post:
+tags:
+- Telemetry
+operationId: submitTelemetryBatch
+summary: Submit privacy-safe telemetry batch
+description: |
+Accepts only allow-listed coarse operational telemetry.
+Financial data and raw SMS are prohibited.
+parameters:
+- $ref: '#/components/parameters/XAppVersion'
+- $ref: '#/components/parameters/XPlatform'
+- $ref: '#/components/parameters/XOSVersion'
+- $ref: '#/components/parameters/XParserVersion'
+- $ref: '#/components/parameters/XInstallId'
+- $ref: '#/components/parameters/XRequestId'
+requestBody:
+required: true
+content:
+application/json:
+schema:
+$ref: '#/components/schemas/TelemetryBatchRequest'
+responses:
+'202':
+description: Telemetry batch accepted
+content:
+application/json:
+schema:
+$ref: '#/components/schemas/TelemetryBatchResponse'
+'400':
+$ref: '#/components/responses/BadRequest'
+'413':
+$ref: '#/components/responses/PayloadTooLarge'
+'429':
+$ref: '#/components/responses/RateLimited'
+'500':
+$ref: '#/components/responses/InternalError'
+'503':
+$ref: '#/components/responses/ServiceUnavailable'
+
+/v1/support/unsupported-format:
+post:
+tags:
+- Support
+operationId: submitUnsupportedFormat
+summary: Submit a user-approved redacted unsupported-format sample
+description: |
+Accepts only content that has been redacted on-device, shown to the
+user, and explicitly approved for submission.
+
+```
+    Raw SMS must never be sent to this endpoint.
+  parameters:
+    - $ref: '#/components/parameters/XAppVersion'
+    - $ref: '#/components/parameters/XPlatform'
+    - $ref: '#/components/parameters/XOSVersion'
+    - $ref: '#/components/parameters/XParserVersion'
+    - $ref: '#/components/parameters/XInstallId'
+    - $ref: '#/components/parameters/XRequestId'
+    - $ref: '#/components/parameters/IdempotencyKey'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/UnsupportedFormatRequest'
+  responses:
+    '201':
+      description: Support submission accepted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UnsupportedFormatResponse'
+    '400':
+      $ref: '#/components/responses/BadRequest'
+    '409':
+      $ref: '#/components/responses/IdempotencyConflict'
+    '413':
+      $ref: '#/components/responses/PayloadTooLarge'
+    '429':
+      $ref: '#/components/responses/RateLimited'
+    '500':
+      $ref: '#/components/responses/InternalError'
+    '503':
+      $ref: '#/components/responses/ServiceUnavailable'
+```
+
+components:
+parameters:
+XAppVersion:
+name: X-App-Version
+in: header
+required: true
+description: Installed Android application version.
+schema:
+type: string
+minLength: 1
+maxLength: 32
+example: "1.0.0"
+
+```
+XPlatform:
+  name: X-Platform
+  in: header
+  required: true
+  description: Mobile platform. Phase-0 supports Android only.
+  schema:
+    type: string
+    enum:
+      - android
+
+XOSVersion:
+  name: X-OS-Version
+  in: header
+  required: true
+  description: Android API level or safe OS-version identifier.
+  schema:
+    type: string
+    minLength: 1
+    maxLength: 16
+    example: "35"
+
+XParserVersion:
+  name: X-Parser-Version
+  in: header
+  required: false
+  description: Active parser version, when available.
+  schema:
+    type: string
+    maxLength: 64
+    example: "2026.08.10.1"
+
+XInstallId:
+  name: X-Install-Id
+  in: header
+  required: true
+  description: |
+    Random resettable installation UUID used only for abuse prevention,
+    coarse telemetry correlation, and rate limiting. It is not a user
+    account or authentication credential.
+  schema:
+    type: string
+    format: uuid
+
+XRequestId:
+  name: X-Request-Id
+  in: header
+  required: false
+  description: Optional client-generated request UUID for tracing.
+  schema:
+    type: string
+    format: uuid
+
+IdempotencyKey:
+  name: Idempotency-Key
+  in: header
+  required: true
+  description: |
+    UUID identifying one logical support submission. Reusing the same
+    key with the same payload is safe. Reusing it with a different
+    payload returns an idempotency conflict.
+  schema:
+    type: string
+    format: uuid
+```
+
+responses:
+BadRequest:
+description: Invalid or privacy-prohibited request
+content:
+application/json:
+schema:
+$ref: '#/components/schemas/ErrorResponse'
+
+```
+IdempotencyConflict:
+  description: Idempotency key was reused with a different payload
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/ErrorResponse'
+
+PayloadTooLarge:
+  description: Request exceeds endpoint payload limits
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/ErrorResponse'
+
+RateLimited:
+  description: Request rate limit exceeded
+  headers:
+    Retry-After:
+      description: Number of seconds before retrying when provided.
+      schema:
+        type: integer
+        minimum: 1
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/ErrorResponse'
+
+InternalError:
+  description: Temporary internal service failure
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/ErrorResponse'
+
+ServiceUnavailable:
+  description: Service temporarily unavailable
+  headers:
+    Retry-After:
+      description: Number of seconds before retrying when provided.
+      schema:
+        type: integer
+        minimum: 1
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/ErrorResponse'
+```
+
+schemas:
+TelemetryBatchRequest:
+type: object
+additionalProperties: false
+required:
+- schemaVersion
+- batchId
+- events
+properties:
+schemaVersion:
+type: integer
+enum:
+- 1
+batchId:
+type: string
+format: uuid
+events:
+type: array
+minItems: 1
+maxItems: 50
+items:
+$ref: '#/components/schemas/TelemetryEvent'
+
+```
+TelemetryEvent:
+  type: object
+  additionalProperties: false
+  required:
+    - eventId
+    - occurredAt
+    - eventType
+  properties:
+    eventId:
+      type: string
+      format: uuid
+    occurredAt:
+      type: string
+      format: date-time
+    eventType:
+      $ref: '#/components/schemas/TelemetryEventType'
+    durationBucket:
+      $ref: '#/components/schemas/DurationBucket'
+    countBucket:
+      $ref: '#/components/schemas/CountBucket'
+    errorCode:
+      type: string
+      pattern: '^[A-Z0-9_]{3,64}$'
+      maxLength: 64
+
+TelemetryEventType:
+  type: string
+  enum:
+    - scan_started
+    - scan_completed
+    - scan_failed
+    - parser_update_checked
+    - parser_update_activated
+    - parser_update_failed
+    - app_error
+
+DurationBucket:
+  type: string
+  enum:
+    - LT_1S
+    - 1S_5S
+    - 5S_15S
+    - 15S_30S
+    - 30S_60S
+    - 1M_5M
+    - GT_5M
+
+CountBucket:
+  type: string
+  enum:
+    - "0"
+    - 1_10
+    - 11_50
+    - 51_200
+    - 201_1000
+    - 1001_PLUS
+
+TelemetryBatchResponse:
+  type: object
+  additionalProperties: false
+  required:
+    - requestId
+    - batchId
+    - acceptedEvents
+    - duplicateEvents
+  properties:
+    requestId:
+      type: string
+      format: uuid
+    batchId:
+      type: string
+      format: uuid
+    acceptedEvents:
+      type: integer
+      minimum: 0
+    duplicateEvents:
+      type: integer
+      minimum: 0
+
+UnsupportedFormatRequest:
+  type: object
+  additionalProperties: false
+  required:
+    - schemaVersion
+    - submissionId
+    - consentedAt
+    - previewConfirmed
+    - redactionVersion
+    - reason
+    - redactedTemplate
+  properties:
+    schemaVersion:
+      type: integer
+      enum:
+        - 1
+    submissionId:
+      type: string
+      format: uuid
+    consentedAt:
+      type: string
+      format: date-time
+    previewConfirmed:
+      type: boolean
+      enum:
+        - true
+    redactionVersion:
+      type: string
+      minLength: 1
+      maxLength: 32
+    reason:
+      type: string
+      enum:
+        - no_rule_match
+        - parse_failed
+        - incorrect_extraction
+        - other
+    redactedTemplate:
+      type: string
+      minLength: 1
+      maxLength: 4096
+      description: |
+        Exact content shown to and explicitly approved by the user after
+        on-device redaction. It must not contain raw SMS or identifiable
+        financial values.
+
+UnsupportedFormatResponse:
+  type: object
+  additionalProperties: false
+  required:
+    - requestId
+    - submissionId
+    - status
+  properties:
+    requestId:
+      type: string
+      format: uuid
+    submissionId:
+      type: string
+      format: uuid
+    status:
+      type: string
+      enum:
+        - accepted
+    deletionScheduledAt:
+      type: string
+      format: date-time
+      description: Scheduled deletion time according to configured TTL.
+
+ErrorResponse:
+  type: object
+  additionalProperties: false
+  required:
+    - error
+  properties:
+    error:
+      $ref: '#/components/schemas/Error'
+
+Error:
+  type: object
+  additionalProperties: false
+  required:
+    - code
+    - message
+    - retryable
+    - requestId
+  properties:
+    code:
+      type: string
+      enum:
+        - VALIDATION_ERROR
+        - PROHIBITED_FIELD
+        - IDEMPOTENCY_CONFLICT
+        - PAYLOAD_TOO_LARGE
+        - RATE_LIMITED
+        - INTERNAL_ERROR
+        - SERVICE_UNAVAILABLE
+    message:
+      type: string
+      maxLength: 256
+      description: Safe message containing no sensitive internal details.
+    retryable:
+      type: boolean
+    requestId:
+      type: string
+      format: uuid
+    validationErrors:
+      type: array
+      maxItems: 20
+      items:
+        $ref: '#/components/schemas/ValidationError'
+
+ValidationError:
+  type: object
+  additionalProperties: false
+  required:
+    - field
+    - code
+    - message
+  properties:
+    field:
+      type: string
+      maxLength: 128
+    code:
+      type: string
+      pattern: '^[A-Z0-9_]{3,64}$'
+    message:
+      type: string
+      maxLength: 256
+```
