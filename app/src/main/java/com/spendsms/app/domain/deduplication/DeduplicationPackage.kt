@@ -1,4 +1,4 @@
 package com.spendsms.app.domain.deduplication
 
-/** Placeholder for duplicate detection domain logic. */
+/** Domain package marker for fingerprinting and duplicate detection. */
 object DeduplicationPackage
