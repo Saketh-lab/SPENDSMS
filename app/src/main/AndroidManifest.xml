@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- SMS-based money management: read-only inbox access for the user-selected period. -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <!-- READ_SMS implies telephony; keep it optional so Play does not exclude large-screen devices. -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
 
     <application
         android:name=".SpendSmsApplication"

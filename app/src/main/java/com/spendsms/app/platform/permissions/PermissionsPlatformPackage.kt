@@ -1,4 +1,4 @@
 package com.spendsms.app.platform.permissions
 
-/** Placeholder for permission helpers. */
+/** Platform package marker for permission helpers. */
 object PermissionsPlatformPackage

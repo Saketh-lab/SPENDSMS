@@ -20,6 +20,9 @@ data class EphemeralSmsMessage(
         require(sender.isNotBlank()) { "sender must not be blank" }
         require(body.isNotEmpty()) { "body must not be empty for processing" }
     }
+
+    override fun toString(): String =
+        "EphemeralSmsMessage(sourceMessageId=$sourceMessageId, sender=$sender, receivedAt=$receivedAt, body=***)"
 }
 
 data class SmsBatchQuery(
@@ -66,8 +69,10 @@ sealed class SmsAccessException(
     class PermissionDenied(message: String = "SMS read permission denied") :
         SmsAccessException(message)
 
-    class PermissionRevoked(message: String = "SMS read permission revoked during scan") :
-        SmsAccessException(message)
+    class PermissionRevoked(
+        message: String = "SMS read permission revoked during scan",
+        cause: Throwable? = null,
+    ) : SmsAccessException(message, cause)
 
     class ProviderError(
         message: String,
