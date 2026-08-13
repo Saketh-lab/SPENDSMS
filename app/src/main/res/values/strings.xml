@@ -1,5 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SpendSMS</string>
-    <string name="foundation_placeholder_title">SpendSMS</string>
-    <string name="foundation_placeholder_body">Phase-0 foundation is ready. Product features are not implemented yet.</string>
+
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_transactions">Transactions</string>
+    <string name="nav_subscriptions">Subscriptions</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="onboarding_title">Understand spending from SMS already on your phone</string>
+    <string name="onboarding_body">SpendSMS reads transactional alerts for a period you choose, keeps analysis on-device, and never uploads raw SMS.</string>
+    <string name="onboarding_privacy_point_1">Only financial alerts are intended for analysis</string>
+    <string name="onboarding_privacy_point_2">OTPs and personal chats are filtered out</string>
+    <string name="onboarding_privacy_point_3">Processing stays on your device</string>
+    <string name="onboarding_privacy_point_4">Raw SMS is not stored or sent off-device</string>
+    <string name="onboarding_privacy_point_5">You can delete analysed data anytime</string>
+    <string name="onboarding_see_sample">See sample dashboard</string>
+    <string name="onboarding_analyse">Analyse my transactions</string>
+    <string name="onboarding_disclaimer">Results are estimates based on available messages, not a bank statement.</string>
+
+    <string name="sample_title">Sample dashboard</string>
+    <string name="sample_body">This preview uses fictional numbers so you can explore the layout before granting SMS access.</string>
+    <string name="sample_continue">Continue to SMS disclosure</string>
+
+    <string name="disclosure_title">SMS access for money management</string>
+    <string name="disclosure_body">SpendSMS needs read-only access to SMS so it can analyse transactional alerts for the period you select.\n\n• Purpose: budget and spending overview from financial SMS\n• Access: read SMS only — never send, delete, or modify messages\n• Storage: extracted transactions stay on this device\n• Sharing: raw SMS never leaves the device\n• Deletion: remove analysed data from Settings → Data and privacy</string>
+    <string name="disclosure_allow">Allow SMS access</string>
+    <string name="disclosure_not_now">Not now</string>
+    <string name="disclosure_open_settings">Open system settings</string>
+    <string name="permission_denied_title">SMS permission needed</string>
+    <string name="permission_denied_body">Without SMS access SpendSMS cannot analyse inbox alerts. You can grant access in system settings, or continue later.</string>
+
+    <string name="scan_period_title">Choose analysis period</string>
+    <string name="scan_start">Start scan</string>
+    <string name="scan_resume">Resume interrupted scan</string>
+    <string name="scan_progress_title">Scanning messages</string>
+    <string name="scan_cancel">Cancel scan</string>
+    <string name="scan_summary_title">Scan complete</string>
+    <string name="scan_go_dashboard">Go to dashboard</string>
+    <string name="scan_error_title">Scan could not finish</string>
+    <string name="scan_retry">Try again</string>
+
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_gross">Gross spending</string>
+    <string name="dashboard_net">Net spending</string>
+    <string name="dashboard_credits">Credits</string>
+    <string name="dashboard_refunds">Refunds</string>
+    <string name="dashboard_transactions">Transactions</string>
+    <string name="dashboard_categories">Categories</string>
+    <string name="dashboard_merchants">Top merchants</string>
+    <string name="dashboard_monthly">Monthly trend</string>
+    <string name="dashboard_recent">Recent</string>
+    <string name="dashboard_subscriptions">Suspected subscriptions</string>
+    <string name="dashboard_last_analysis">Last analysis</string>
+    <string name="dashboard_disclaimer">Informational estimates from SMS alerts. Not a bank statement.</string>
+    <string name="dashboard_empty_title">No analysed data yet</string>
+    <string name="dashboard_empty_body">Run a scan for a selected period to build your spending overview.</string>
+    <string name="dashboard_rescan">Analyse SMS</string>
+
+    <string name="transactions_title">Transactions</string>
+    <string name="transactions_search">Search merchant</string>
+    <string name="transactions_empty">No transactions in this period.</string>
+    <string name="transaction_detail_title">Transaction</string>
+    <string name="transaction_correct">Save correction</string>
+    <string name="transaction_merchant">Merchant</string>
+    <string name="transaction_category">Category</string>
+    <string name="transaction_direction">Type</string>
+    <string name="transaction_duplicate">Duplicate status</string>
+    <string name="transaction_transfer">Transfer status</string>
+    <string name="transaction_not_a_transaction">Not a transaction</string>
+    <string name="transaction_apply_future">Apply category/merchant to future matches</string>
+    <string name="transaction_confidence">Confidence</string>
+
+    <string name="category_detail_title">Category</string>
+    <string name="merchant_detail_title">Merchant</string>
+
+    <string name="subscriptions_title">Subscriptions</string>
+    <string name="subscriptions_suspected">Suspected</string>
+    <string name="subscriptions_confirmed">Confirmed</string>
+    <string name="subscriptions_dismissed">Dismissed</string>
+    <string name="subscriptions_inactive">Possibly inactive</string>
+    <string name="subscriptions_confirm">Confirm</string>
+    <string name="subscriptions_dismiss">Dismiss</string>
+    <string name="subscriptions_disclaimer">SpendSMS never cancels or verifies a subscription with the merchant.</string>
+    <string name="subscriptions_empty">No subscription suggestions yet.</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_privacy">Data and privacy</string>
+    <string name="settings_permission">SMS permission</string>
+    <string name="settings_permission_granted">Granted</string>
+    <string name="settings_permission_denied">Not granted</string>
+    <string name="settings_open_permission">Manage in system settings</string>
+    <string name="settings_rescan">Analyse a new period</string>
+    <string name="settings_about">SpendSMS Phase-0 — local SMS spending overview</string>
+    <string name="settings_privacy_policy">Privacy policy (local processing)</string>
+    <string name="settings_privacy_policy_body">SpendSMS analyses transactional SMS on your device. Raw SMS bodies are not persisted or uploaded. Extracted transactions remain local until you delete them.</string>
+
+    <string name="deletion_title">Delete analysed data</string>
+    <string name="deletion_body">This permanently deletes local transactions, corrections, subscriptions, scan progress, and dashboard cache from this device.\n\nParser rule packages bundled with the app are retained so scanning can work offline.\n\nRaw SMS in your inbox is never modified.</string>
+    <string name="deletion_confirm">Delete analysed data</string>
+    <string name="deletion_cancel">Keep my data</string>
+    <string name="deletion_done_title">Analysed data deleted</string>
+    <string name="deletion_done_body">Local financial records were removed. You can run a new scan when ready.</string>
 </resources>
