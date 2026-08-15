@@ -1,0 +1,9 @@
+{
+  "controlledImportEnabled": true,
+  "subscriptionDetectionEnabled": true,
+  "newParserVersionEnabled": true,
+  "premiumExperimentEnabled": false,
+  "supportSubmissionEnabled": false,
+  "minimumSupportedAppVersion": "0.1.0",
+  "configVersion": "phase0-1"
+}

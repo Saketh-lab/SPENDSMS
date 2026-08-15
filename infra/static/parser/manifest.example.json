@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "latestParserVersion": "bundled-2026.08.12.0",
+  "latestRulesVersion": "bundled-rules-1",
+  "minimumAppVersion": "0.1.0",
+  "packageUrl": "https://REPLACE_CLOUDFRONT_DOMAIN/parser/bundled-2026.08.12.0/bundle.json",
+  "packageSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

@@ -1,0 +1,2 @@
+# Keep checked-in examples; ignore accidental local copies.
+.DS_Store

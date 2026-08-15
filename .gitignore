@@ -13,3 +13,9 @@ captures/
 *.dex
 .cxx/
 .kotlin/
+
+# SpendSMS Phase-0 IaC (local synth artifacts only)
+infra/node_modules/
+infra/cdk.out/
+infra/dist/
+infra/.cdk.staging/
