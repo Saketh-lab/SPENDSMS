@@ -23,6 +23,13 @@ android {
         // Placeholder base URL for future thin control-plane calls only.
         // No AWS integration is wired in this foundation step.
         buildConfigField("String", "API_BASE_URL", "\"https://api.example.invalid/\"")
+        // Static CloudFront/S3 parser delivery (Step-4 §8) — placeholders until real CDN is published.
+        buildConfigField("String", "PARSER_CDN_BASE_URL", "\"https://cdn.example.invalid/\"")
+        buildConfigField(
+            "String",
+            "PARSER_MANIFEST_URL",
+            "\"https://cdn.example.invalid/parser/manifest.json\"",
+        )
     }
 
     buildTypes {
