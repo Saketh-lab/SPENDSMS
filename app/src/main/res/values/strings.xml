@@ -94,6 +94,22 @@
     <string name="settings_about">SpendSMS Phase-0 — local SMS spending overview</string>
     <string name="settings_privacy_policy">Privacy policy (local processing)</string>
     <string name="settings_privacy_policy_body">SpendSMS analyses transactional SMS on your device. Raw SMS bodies are not persisted or uploaded. Extracted transactions remain local until you delete them.</string>
+    <string name="settings_control_plane">Cloud services (Phase-0)</string>
+    <string name="settings_cloud_sync_off">Cloud sync is off. The app runs fully on-device with bundled parser rules.</string>
+    <string name="settings_parser_source">Parser source: %1$s</string>
+    <string name="settings_parser_updates_off">Remote parser updates: off</string>
+    <string name="settings_support_off">Support submissions: unavailable offline</string>
+    <string name="settings_open_support">Report unsupported SMS format</string>
+
+    <string name="support_title">Unsupported format report</string>
+    <string name="support_unavailable_body">Support submissions require the SpendSMS API, which is not configured in this local-only build. Your SMS data stays on-device; nothing is uploaded.</string>
+    <string name="support_ready_body">Submit a redacted template only after preview confirmation. No raw SMS is sent.</string>
+    <string name="support_submit_sample">Submit sample (dev)</string>
+    <string name="support_back">Back</string>
+    <string name="support_submitted_title">Submission recorded locally</string>
+    <string name="support_submitted_body">The control plane accepted your redacted template.</string>
+    <string name="support_service_unavailable_title">Submission unavailable</string>
+    <string name="support_service_unavailable_body">The support service is not reachable. No data was uploaded and you can continue using SpendSMS offline.</string>
 
     <string name="deletion_title">Delete analysed data</string>
     <string name="deletion_body">This permanently deletes local transactions, corrections, subscriptions, scan progress, and dashboard cache from this device.\n\nParser rule packages bundled with the app are retained so scanning can work offline.\n\nRaw SMS in your inbox is never modified.</string>

@@ -1,6 +1,7 @@
 package com.spendsms.app.application.analysis
 
 import com.google.common.truth.Truth.assertThat
+import com.spendsms.app.application.controlplane.ControlPlaneCoordinator
 import com.spendsms.app.application.parser.ParserBundleActivationResult
 import com.spendsms.app.application.parser.ParserBundleFailureReason
 import com.spendsms.app.application.parser.ParserBundleInstallResult
@@ -342,6 +343,7 @@ class ScanCoordinatorTest {
             smsSource = source,
             permissionPort = permission,
             parserBundleManager = FakeParserBundleManager(rules),
+            controlPlane = controlPlaneFor(rules),
             parsingPipeline = pipeline,
             classificationService = classifier,
             duplicateDetectionService = detection,
@@ -349,6 +351,27 @@ class ScanCoordinatorTest {
             scanIdFactory = ScanIdFactory { scanIds() },
             clock = clock,
         )
+    }
+
+    private fun controlPlaneFor(
+        rules: DeclarativeParserRules,
+    ): ControlPlaneCoordinator {
+        val metadata = ParserMetadata(
+            parserVersion = rules.parserVersion,
+            rulesVersion = RulesVersion.of("bundled-rules-1"),
+            schemaVersion = rules.schemaVersion,
+            checksum = "abc",
+            installedAt = EpochMillis.of(1L),
+            activatedAt = EpochMillis.of(1L),
+            status = ParserBundleStatus.ACTIVE,
+        )
+        val controlPlane = mockk<ControlPlaneCoordinator>(relaxed = true)
+        coEvery { controlPlane.ensureParserReadyForScan() } returns ParserBundleActivationResult.Activated(
+            metadata = metadata,
+            rules = rules,
+            usedBundledFallback = true,
+        )
+        return controlPlane
     }
 
     private fun sms(

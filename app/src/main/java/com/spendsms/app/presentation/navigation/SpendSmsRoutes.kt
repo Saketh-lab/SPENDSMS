@@ -15,6 +15,7 @@ object SpendSmsRoutes {
     const val MERCHANT_DETAIL = "merchant/{merchantKey}"
     const val SUBSCRIPTIONS = "subscriptions"
     const val SETTINGS = "settings"
+    const val SUPPORT = "support"
     const val PRIVACY_DELETION = "privacy_deletion"
 
     fun transactionDetail(id: String) = "transaction/$id"

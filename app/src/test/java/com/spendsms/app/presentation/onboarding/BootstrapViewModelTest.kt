@@ -1,6 +1,8 @@
 package com.spendsms.app.presentation.onboarding
 
 import com.google.common.truth.Truth.assertThat
+import com.spendsms.app.application.controlplane.ControlPlaneCoordinator
+import com.spendsms.app.application.controlplane.ControlPlaneBootstrapResult
 import com.spendsms.app.application.port.ScanStateRepository
 import com.spendsms.app.application.port.sms.SmsPermissionPort
 import com.spendsms.app.data.preferences.UserPreferencesStore
@@ -11,6 +13,7 @@ import com.spendsms.app.domain.model.ScanId
 import com.spendsms.app.domain.model.ScanState
 import com.spendsms.app.domain.model.ScanStatus
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +50,7 @@ class BootstrapViewModelTest {
             preferences = preferences,
             scanStateRepository = mockk(relaxed = true),
             permissionPort = SmsPermissionPort { false },
+            controlPlane = mockControlPlane(),
         )
         dispatcher.scheduler.advanceUntilIdle()
         assertThat(vm.destination.value).isEqualTo(BootstrapDestination.Onboarding)
@@ -70,8 +74,31 @@ class BootstrapViewModelTest {
             updatedAt = EpochMillis.of(2L),
         )
         coEvery { scans.findResumable() } returns null
-        val vm = BootstrapViewModel(preferences, scans, SmsPermissionPort { true })
+        val vm = BootstrapViewModel(preferences, scans, SmsPermissionPort { true }, mockControlPlane())
         dispatcher.scheduler.advanceUntilIdle()
         assertThat(vm.destination.value).isEqualTo(BootstrapDestination.Dashboard)
+    }
+
+    @Test
+    fun bootstrap_runsInBackground_andDoesNotBlockRouting() = runTest {
+        val controlPlane = mockk<ControlPlaneCoordinator>()
+        coEvery { controlPlane.bootstrap() } returns ControlPlaneBootstrapResult.ParserDegraded("missing")
+        val preferences = mockk<UserPreferencesStore>()
+        every { preferences.onboardingCompleted } returns flowOf(false)
+        val vm = BootstrapViewModel(
+            preferences = preferences,
+            scanStateRepository = mockk(relaxed = true),
+            permissionPort = SmsPermissionPort { false },
+            controlPlane = controlPlane,
+        )
+        dispatcher.scheduler.advanceUntilIdle()
+        assertThat(vm.destination.value).isEqualTo(BootstrapDestination.Onboarding)
+        coVerify(exactly = 1) { controlPlane.bootstrap() }
+    }
+
+    private fun mockControlPlane(): ControlPlaneCoordinator {
+        val controlPlane = mockk<ControlPlaneCoordinator>()
+        coEvery { controlPlane.bootstrap() } returns ControlPlaneBootstrapResult.Ready("bundled-2026.08.12.0")
+        return controlPlane
     }
 }

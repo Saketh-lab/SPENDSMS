@@ -1,5 +1,6 @@
 package com.spendsms.app.application.analysis
 
+import com.spendsms.app.application.controlplane.ControlPlaneCoordinator
 import com.spendsms.app.application.parser.ParserBundleActivationResult
 import com.spendsms.app.application.parser.ParserBundleManager
 import com.spendsms.app.application.port.ScanStateRepository
@@ -31,6 +32,7 @@ class ScanCoordinator @Inject constructor(
     private val smsSource: SmsMessageSource,
     private val permissionPort: SmsPermissionPort,
     private val parserBundleManager: ParserBundleManager,
+    private val controlPlane: ControlPlaneCoordinator,
     private val parsingPipeline: MessageParsingPipeline,
     private val classificationService: TransactionClassificationService,
     private val duplicateDetectionService: DuplicateDetectionService,
@@ -89,11 +91,14 @@ class ScanCoordinator @Inject constructor(
         }
 
         val rules = loadRules()
-            ?: return ScanResult.Failed(
+            ?: run {
+                controlPlane.recordScanFailed("PARSER_UNAVAILABLE")
+                return ScanResult.Failed(
                 state = null,
                 reason = ScanFailureReason.PARSER_UNAVAILABLE,
                 detail = "Active parser rules are unavailable",
             )
+            }
 
         val now = clock.now()
         val created = ScanState(
@@ -131,8 +136,12 @@ class ScanCoordinator @Inject constructor(
                 )
             }
             val rules = preloadedRules ?: loadRules()
-                ?: return persistFailed(state, ScanFailureReason.PARSER_UNAVAILABLE, "Parser rules unavailable")
+                ?: run {
+                    controlPlane.recordScanFailed("PARSER_UNAVAILABLE")
+                    return persistFailed(state, ScanFailureReason.PARSER_UNAVAILABLE, "Parser rules unavailable")
+                }
 
+            controlPlane.recordScanStarted()
             state = persist(
                 state.copy(
                     status = ScanStatus.RUNNING,
@@ -229,6 +238,7 @@ class ScanCoordinator @Inject constructor(
                 ),
                 onProgress,
             )
+            controlPlane.recordScanCompleted()
             return ScanResult.Completed(completed, isolatedFailures)
         } catch (e: CancellationException) {
             if (cancelRequested.contains(state.id.value)) {
@@ -243,6 +253,7 @@ class ScanCoordinator @Inject constructor(
             }
             throw e
         } catch (e: Exception) {
+            controlPlane.recordScanFailed("SCAN_UNEXPECTED")
             return persistFailed(
                 state = state,
                 reason = ScanFailureReason.UNEXPECTED,
@@ -275,7 +286,7 @@ class ScanCoordinator @Inject constructor(
     }
 
     private suspend fun loadRules(): DeclarativeParserRules? {
-        return when (val activation = parserBundleManager.ensureActiveOrFallbackToBundled()) {
+        return when (val activation = controlPlane.ensureParserReadyForScan()) {
             is ParserBundleActivationResult.Activated -> activation.rules
             is ParserBundleActivationResult.Failed -> parserBundleManager.loadActiveRules()
         }

@@ -2,6 +2,7 @@ package com.spendsms.app.presentation.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.spendsms.app.application.controlplane.ControlPlaneCoordinator
 import com.spendsms.app.application.port.ScanStateRepository
 import com.spendsms.app.application.port.sms.SmsPermissionPort
 import com.spendsms.app.data.preferences.UserPreferencesStore
@@ -25,6 +26,7 @@ class BootstrapViewModel @Inject constructor(
     private val preferences: UserPreferencesStore,
     private val scanStateRepository: ScanStateRepository,
     private val permissionPort: SmsPermissionPort,
+    private val controlPlane: ControlPlaneCoordinator,
 ) : ViewModel() {
 
     private val _destination = MutableStateFlow<BootstrapDestination>(BootstrapDestination.Loading)
@@ -36,6 +38,7 @@ class BootstrapViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
+            launch { controlPlane.bootstrap() }
             val onboarded = preferences.onboardingCompleted.first()
             if (!onboarded) {
                 _destination.value = BootstrapDestination.Onboarding

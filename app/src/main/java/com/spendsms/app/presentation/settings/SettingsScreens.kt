@@ -35,6 +35,7 @@ import com.spendsms.app.presentation.common.SectionTitle
 fun SettingsScreen(
     onOpenPrivacyDeletion: () -> Unit,
     onStartScan: () -> Unit,
+    onOpenSupport: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -42,7 +43,7 @@ fun SettingsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshPermission()
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refresh()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -86,6 +87,21 @@ fun SettingsScreen(
         SectionTitle("Analysis")
         OutlinedButton(onClick = onStartScan, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.settings_rescan))
+        }
+
+        SectionTitle(stringResource(R.string.settings_control_plane))
+        if (ui.controlPlane.isLocalOnlyMode) {
+            Text(stringResource(R.string.settings_cloud_sync_off))
+        }
+        Text(stringResource(R.string.settings_parser_source, ui.controlPlane.parserSourceLabel))
+        if (!ui.controlPlane.parserUpdatesEnabled) {
+            Text(stringResource(R.string.settings_parser_updates_off))
+        }
+        if (!ui.controlPlane.supportSubmissionEnabled) {
+            Text(stringResource(R.string.settings_support_off))
+        }
+        OutlinedButton(onClick = onOpenSupport, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.settings_open_support))
         }
 
         SectionTitle(stringResource(R.string.settings_privacy_policy))

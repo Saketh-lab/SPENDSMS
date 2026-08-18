@@ -6,6 +6,8 @@ import com.spendsms.app.application.dashboard.DashboardService
 import com.spendsms.app.application.port.FinancialDataDeletionPort
 import com.spendsms.app.application.port.sms.SmsPermissionPort
 import com.spendsms.app.data.preferences.UserPreferencesStore
+import com.spendsms.app.application.controlplane.ControlPlaneCoordinator
+import com.spendsms.app.application.controlplane.ControlPlaneStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +18,7 @@ import kotlinx.coroutines.launch
 data class SettingsUi(
     val permissionGranted: Boolean,
     val appVersionLabel: String,
+    val controlPlane: ControlPlaneStatus,
 )
 
 sealed interface DeletionPhase {
@@ -28,15 +31,31 @@ sealed interface DeletionPhase {
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val permissionPort: SmsPermissionPort,
+    private val controlPlane: ControlPlaneCoordinator,
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(
         SettingsUi(
             permissionGranted = permissionPort.hasReadSmsPermission(),
             appVersionLabel = com.spendsms.app.BuildConfig.VERSION_NAME,
+            controlPlane = ControlPlaneStatus.localOnly(),
         ),
     )
     val ui: StateFlow<SettingsUi> = _ui.asStateFlow()
+
+    init {
+        refresh()
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            val status = controlPlane.currentStatus()
+            _ui.value = _ui.value.copy(
+                permissionGranted = permissionPort.hasReadSmsPermission(),
+                controlPlane = status,
+            )
+        }
+    }
 
     fun refreshPermission() {
         _ui.value = _ui.value.copy(permissionGranted = permissionPort.hasReadSmsPermission())

@@ -37,6 +37,7 @@ import com.spendsms.app.presentation.onboarding.SmsDisclosureScreen
 import com.spendsms.app.presentation.scan.ScanFlowScreen
 import com.spendsms.app.presentation.settings.PrivacyDeletionScreen
 import com.spendsms.app.presentation.settings.SettingsScreen
+import com.spendsms.app.presentation.support.SupportScreen
 import com.spendsms.app.presentation.subscriptions.SubscriptionsScreen
 import com.spendsms.app.presentation.transactions.CategoryDetailScreen
 import com.spendsms.app.presentation.transactions.MerchantDetailScreen
@@ -185,7 +186,11 @@ fun SpendSmsNavHost() {
                 SettingsScreen(
                     onOpenPrivacyDeletion = { navController.navigate(SpendSmsRoutes.PRIVACY_DELETION) },
                     onStartScan = { navController.navigate(SpendSmsRoutes.SCAN_PERIOD) },
+                    onOpenSupport = { navController.navigate(SpendSmsRoutes.SUPPORT) },
                 )
+            }
+            composable(SpendSmsRoutes.SUPPORT) {
+                SupportScreen(onBack = { navController.popBackStack() })
             }
             composable(SpendSmsRoutes.PRIVACY_DELETION) {
                 PrivacyDeletionScreen(
