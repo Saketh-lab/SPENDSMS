@@ -311,6 +311,37 @@ class ScanCoordinatorTest {
         assertThat(txs.rows).hasSize(2)
     }
 
+    @Test
+    fun leftoverRunning_withDifferentPeriod_resumesExistingInsteadOfFailing() = runBlocking {
+        val messages = listOf(
+            sms("1", "EX-BANK", "Rs.10.00 debited at SWIGGY", receivedAt = 2_001L),
+            sms("2", "EX-BANK", "Rs.11.00 debited at SWIGGY", receivedAt = 2_002L),
+        )
+        val txs = ScanTestTransactionRepository()
+        val scans = InMemoryScanStateRepository()
+        val coordinator = coordinator(
+            source = InMemorySmsMessageSource(messages),
+            scans = scans,
+            txs = txs,
+        )
+        val first = coordinator.startScan(ScanRequest(period, batchSize = 10)) as ScanResult.Completed
+        scans.save(
+            first.state.copy(
+                status = ScanStatus.RUNNING,
+                completedAt = null,
+                lastProcessedMessageId = "1",
+                processedCount = 1,
+                acceptedCount = 1,
+                updatedAt = EpochMillis.of(clock.nowMillis()),
+            ),
+        )
+        val otherPeriod = AnalysisPeriod(EpochMillis.of(10_000L), EpochMillis.of(20_000L))
+        val result = coordinator.startScan(ScanRequest(otherPeriod))
+        assertThat(result).isInstanceOf(ScanResult.Completed::class.java)
+        assertThat((result as ScanResult.Completed).state.id).isEqualTo(first.state.id)
+        assertThat(txs.rows).hasSize(2)
+    }
+
     private fun coordinator(
         source: SmsMessageSource,
         permission: SmsPermissionPort = SmsPermissionPort { true },

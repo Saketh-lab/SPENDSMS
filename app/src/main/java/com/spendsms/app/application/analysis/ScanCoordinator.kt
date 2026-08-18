@@ -20,6 +20,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
 
 /**
  * Foreground local scan orchestration (Step-3 Scan Coordinator).
@@ -41,6 +42,7 @@ class ScanCoordinator @Inject constructor(
     private val clock: ScanClock,
 ) {
     private val cancelRequested: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val inProcessScanGate = Mutex()
 
     fun requestCancel(scanId: ScanId) {
         cancelRequested += scanId.value
@@ -50,17 +52,28 @@ class ScanCoordinator @Inject constructor(
         request: ScanRequest,
         onProgress: ScanProgressListener? = null,
     ): ScanResult {
-        val existingActive = scanStateRepository.findActive()
-        if (request.resumeScanId == null && existingActive != null) {
-            return if (existingActive.period == request.period) {
-                runScan(existingActive, request.batchSize, onProgress)
-            } else {
-                ScanResult.Failed(
-                    state = existingActive,
-                    reason = ScanFailureReason.SCAN_ALREADY_ACTIVE,
-                    detail = "An active scan already exists",
-                )
-            }
+        if (!inProcessScanGate.tryLock()) {
+            val existing = scanStateRepository.findActive() ?: scanStateRepository.findResumable()
+            return ScanResult.Failed(
+                state = existing,
+                reason = ScanFailureReason.SCAN_ALREADY_ACTIVE,
+                detail = "A scan is already running in this process",
+            )
+        }
+        try {
+            return startScanLocked(request, onProgress)
+        } finally {
+            inProcessScanGate.unlock()
+        }
+    }
+
+    private suspend fun startScanLocked(
+        request: ScanRequest,
+        onProgress: ScanProgressListener?,
+    ): ScanResult {
+        val leftover = scanStateRepository.findActive() ?: scanStateRepository.findResumable()
+        if (request.resumeScanId == null && leftover != null) {
+            return runScan(leftover, request.batchSize, onProgress)
         }
         if (request.resumeScanId != null) {
             val existing = scanStateRepository.findById(request.resumeScanId)

@@ -44,7 +44,7 @@ class DashboardViewModelTest {
     @Test
     fun refresh_withTransactions_emitsReady() = runTest {
         val dashboard = mockk<DashboardService>()
-        coEvery { dashboard.getDashboard(period) } returns sampleResult(count = 3)
+        coEvery { dashboard.getDashboard(period, useCache = true) } returns sampleResult(count = 3)
         val preferences = mockk<UserPreferencesStore>()
         every { preferences.lastAnalysisPeriod } returns flowOf(period)
         val vm = DashboardViewModel(
@@ -59,7 +59,7 @@ class DashboardViewModelTest {
     @Test
     fun refresh_withNoAnalysis_emitsEmpty() = runTest {
         val dashboard = mockk<DashboardService>()
-        coEvery { dashboard.getDashboard(period) } returns sampleResult(count = 0)
+        coEvery { dashboard.getDashboard(period, useCache = true) } returns sampleResult(count = 0)
         val preferences = mockk<UserPreferencesStore>()
         every { preferences.lastAnalysisPeriod } returns flowOf(period)
         val scans = mockk<ScanStateRepository>()
@@ -67,6 +67,25 @@ class DashboardViewModelTest {
         val vm = DashboardViewModel(dashboard, preferences, scans)
         dispatcher.scheduler.advanceUntilIdle()
         assertThat(vm.state.value).isInstanceOf(AsyncUiState.Empty::class.java)
+    }
+
+    @Test
+    fun explicitRefresh_bypassesStaleCache() = runTest {
+        val dashboard = mockk<DashboardService>()
+        coEvery { dashboard.getDashboard(period, useCache = true) } returns sampleResult(count = 1)
+        coEvery { dashboard.getDashboard(period, useCache = false) } returns sampleResult(count = 4)
+        val preferences = mockk<UserPreferencesStore>()
+        every { preferences.lastAnalysisPeriod } returns flowOf(period)
+        val vm = DashboardViewModel(
+            dashboardService = dashboard,
+            preferences = preferences,
+            scanStateRepository = mockk(relaxed = true),
+        )
+        dispatcher.scheduler.advanceUntilIdle()
+        vm.refresh(useCache = false)
+        dispatcher.scheduler.advanceUntilIdle()
+        val ready = vm.state.value as AsyncUiState.Ready
+        assertThat(ready.value.transactionCount).isEqualTo(4)
     }
 
     private fun sampleResult(count: Int) = DashboardResult(

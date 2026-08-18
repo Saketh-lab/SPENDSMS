@@ -27,6 +27,7 @@ import com.spendsms.app.domain.dashboard.DashboardResult
 import com.spendsms.app.presentation.common.AsyncUiState
 import com.spendsms.app.presentation.common.LoadingState
 import com.spendsms.app.presentation.common.MessageState
+import com.spendsms.app.presentation.common.RefreshOnResume
 import com.spendsms.app.presentation.common.SectionTitle
 import com.spendsms.app.presentation.common.UiFormatters
 
@@ -41,6 +42,7 @@ fun DashboardScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val period by viewModel.period.collectAsStateWithLifecycle()
+    RefreshOnResume { viewModel.refresh(useCache = false) }
 
     when (val current = state) {
         AsyncUiState.Loading -> LoadingState()

@@ -32,10 +32,10 @@ class DashboardViewModel @Inject constructor(
     val period: StateFlow<AnalysisPeriod?> = _period.asStateFlow()
 
     init {
-        refresh()
+        refresh(useCache = true)
     }
 
-    fun refresh() {
+    fun refresh(useCache: Boolean = false) {
         viewModelScope.launch {
             _state.value = AsyncUiState.Loading
             val period = preferences.lastAnalysisPeriod.first()
@@ -43,7 +43,7 @@ class DashboardViewModel @Inject constructor(
                 ?: PeriodPreset.LAST_30_DAYS.toAnalysisPeriod()
             _period.value = period
             runCatching {
-                dashboardService.getDashboard(period, useCache = true)
+                dashboardService.getDashboard(period, useCache = useCache)
             }.onSuccess { result ->
                 _state.value = if (result.transactionCount == 0 && result.lastAnalysisAt == null) {
                     AsyncUiState.Empty("No analysed data yet.")

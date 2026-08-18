@@ -196,7 +196,9 @@ fun SpendSmsNavHost() {
                 PrivacyDeletionScreen(
                     onDoneNavigateHome = {
                         navController.navigate(SpendSmsRoutes.DASHBOARD) {
-                            popUpTo(SpendSmsRoutes.DASHBOARD) { inclusive = true }
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = true
+                            }
                             launchSingleTop = true
                         }
                     },

@@ -3,7 +3,14 @@ package com.spendsms.app.presentation.settings
 import com.google.common.truth.Truth.assertThat
 import com.spendsms.app.application.dashboard.DashboardService
 import com.spendsms.app.application.port.FinancialDataDeletionPort
+import com.spendsms.app.application.port.ParserBundleRepository
+import com.spendsms.app.application.port.ScanWorkScheduler
 import com.spendsms.app.data.preferences.UserPreferencesStore
+import com.spendsms.app.domain.model.ParserMetadata
+import com.spendsms.app.domain.model.ParserVersion
+import com.spendsms.app.domain.model.RulesVersion
+import com.spendsms.app.domain.model.ParserBundleStatus
+import com.spendsms.app.domain.model.EpochMillis
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -38,7 +45,18 @@ class DataDeletionViewModelTest {
         val deletion = mockk<FinancialDataDeletionPort>(relaxed = true)
         val dashboard = mockk<DashboardService>(relaxed = true)
         val preferences = mockk<UserPreferencesStore>(relaxed = true)
-        val vm = DataDeletionViewModel(deletion, dashboard, preferences)
+        val scheduler = mockk<ScanWorkScheduler>(relaxed = true)
+        val parsers = mockk<ParserBundleRepository>()
+        coEvery { parsers.findActiveMetadata() } returns ParserMetadata(
+            parserVersion = ParserVersion.of("bundled-2026.08.12.0"),
+            rulesVersion = RulesVersion.of("bundled-rules-1"),
+            schemaVersion = 1,
+            checksum = "x",
+            installedAt = EpochMillis.of(1L),
+            activatedAt = EpochMillis.of(1L),
+            status = ParserBundleStatus.ACTIVE,
+        )
+        val vm = DataDeletionViewModel(deletion, dashboard, preferences, scheduler, parsers)
 
         vm.deleteAnalysedData()
         dispatcher.scheduler.advanceUntilIdle()
@@ -46,6 +64,7 @@ class DataDeletionViewModelTest {
         assertThat(vm.phase.value).isEqualTo(DeletionPhase.Done)
         assertThat(vm.parserStillPresent.value).isTrue()
         coVerifyOrder {
+            scheduler.cancel()
             deletion.deleteAllAnalysedData()
             dashboard.invalidateCache()
             preferences.clearAnalysisPeriod()
@@ -61,6 +80,8 @@ class DataDeletionViewModelTest {
             deletionPort = deletion,
             dashboardService = dashboard,
             preferences = mockk(relaxed = true),
+            scanWorkScheduler = mockk(relaxed = true),
+            parserBundleRepository = mockk(relaxed = true),
         )
 
         vm.deleteAnalysedData()

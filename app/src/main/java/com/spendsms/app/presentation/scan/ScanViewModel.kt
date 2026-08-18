@@ -2,18 +2,20 @@ package com.spendsms.app.presentation.scan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.spendsms.app.application.analysis.ScanCompletionHandler
 import com.spendsms.app.application.analysis.ScanCoordinator
 import com.spendsms.app.application.analysis.ScanFailureReason
 import com.spendsms.app.application.analysis.ScanInterruptReason
 import com.spendsms.app.application.analysis.ScanRequest
 import com.spendsms.app.application.analysis.ScanResult
-import com.spendsms.app.application.dashboard.DashboardService
+import com.spendsms.app.application.analysis.ScanScheduleRequest
 import com.spendsms.app.application.port.ScanStateRepository
+import com.spendsms.app.application.port.ScanWorkScheduler
 import com.spendsms.app.application.port.sms.SmsPermissionPort
-import com.spendsms.app.application.subscriptions.SubscriptionDetectionService
 import com.spendsms.app.data.preferences.UserPreferencesStore
 import com.spendsms.app.domain.model.AnalysisPeriod
 import com.spendsms.app.domain.model.EpochMillis
+import com.spendsms.app.domain.model.ScanId
 import com.spendsms.app.domain.model.ScanState
 import com.spendsms.app.presentation.common.PeriodPreset
 import com.spendsms.app.presentation.common.toAnalysisPeriod
@@ -51,8 +53,8 @@ class ScanViewModel @Inject constructor(
     private val scanStateRepository: ScanStateRepository,
     private val permissionPort: SmsPermissionPort,
     private val preferences: UserPreferencesStore,
-    private val subscriptionDetectionService: SubscriptionDetectionService,
-    private val dashboardService: DashboardService,
+    private val completionHandler: ScanCompletionHandler,
+    private val scanWorkScheduler: ScanWorkScheduler,
 ) : ViewModel() {
 
     private val _phase = MutableStateFlow<ScanPhase>(ScanPhase.SelectPeriod)
@@ -69,8 +71,12 @@ class ScanViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _resumable.value = scanStateRepository.findResumable()
+            val leftover = scanStateRepository.findResumable()
+            _resumable.value = leftover
             preferences.lastAnalysisPeriod.first()?.let { /* keep prefs warm */ }
+            if (leftover != null) {
+                resumeIfPossible()
+            }
         }
     }
 
@@ -83,16 +89,16 @@ class ScanViewModel @Inject constructor(
     }
 
     fun resumeIfPossible() {
-        val existing = _resumable.value ?: return
-        startScan(existing.period, resumeScanId = existing.id.value)
+        viewModelScope.launch {
+            val existing = scanStateRepository.findResumable() ?: _resumable.value ?: return@launch
+            _resumable.value = existing
+            startScan(existing.period, resumeScanId = existing.id.value)
+        }
     }
 
     fun cancelScan() {
         viewModelScope.launch {
-            val resumable = scanStateRepository.findResumable()
-            if (resumable != null) {
-                scanCoordinator.requestCancel(resumable.id)
-            }
+            scanWorkScheduler.cancel()
         }
     }
 
@@ -115,10 +121,18 @@ class ScanViewModel @Inject constructor(
         scanJob?.cancel()
         _phase.value = ScanPhase.Running(ScanUiProgress())
         scanJob = viewModelScope.launch {
+            runCatching {
+                scanWorkScheduler.enqueue(
+                    ScanScheduleRequest(
+                        period = period,
+                        resumeScanId = parseResumeScanId(resumeScanId),
+                    ),
+                )
+            }
             val result = scanCoordinator.startScan(
                 request = ScanRequest(
                     period = period,
-                    resumeScanId = resumeScanId?.let { com.spendsms.app.domain.model.ScanId.of(it) },
+                    resumeScanId = parseResumeScanId(resumeScanId),
                 ),
             ) { state ->
                 _phase.value = ScanPhase.Running(
@@ -136,10 +150,10 @@ class ScanViewModel @Inject constructor(
     private suspend fun handleResult(result: ScanResult, period: AnalysisPeriod) {
         when (result) {
             is ScanResult.Completed -> {
-                val now = EpochMillis.of(System.currentTimeMillis())
-                preferences.setLastAnalysisPeriod(period)
-                subscriptionDetectionService.detectAndPersist(period, now)
-                dashboardService.recomputeAndCache(period)
+                completionHandler.onScanCompleted(
+                    period = period,
+                    now = EpochMillis.of(System.currentTimeMillis()),
+                )
                 _phase.value = ScanPhase.Completed(
                     processedCount = result.state.processedCount,
                     acceptedCount = result.state.acceptedCount,
@@ -166,13 +180,19 @@ class ScanViewModel @Inject constructor(
                 _phase.value = ScanPhase.Failed(message = message, canResume = true)
             }
             is ScanResult.Failed -> {
+                if (result.state != null &&
+                    (result.reason == ScanFailureReason.PERMISSION_DENIED ||
+                        result.reason == ScanFailureReason.SCAN_ALREADY_ACTIVE)
+                ) {
+                    _resumable.value = scanStateRepository.findResumable() ?: result.state
+                }
                 val message = when (result.reason) {
                     ScanFailureReason.PERMISSION_DENIED ->
                         "SMS permission is not granted."
                     ScanFailureReason.PARSER_UNAVAILABLE ->
                         "Parser rules are unavailable. Bundled rules may need reinstall."
                     ScanFailureReason.SCAN_ALREADY_ACTIVE ->
-                        "Another scan is already active."
+                        "A scan is already in progress. You can resume it."
                     ScanFailureReason.NOT_RESUMABLE ->
                         "This scan cannot be resumed."
                     ScanFailureReason.UNEXPECTED ->
@@ -180,9 +200,13 @@ class ScanViewModel @Inject constructor(
                 }
                 _phase.value = ScanPhase.Failed(
                     message = message,
-                    canResume = result.reason == ScanFailureReason.PERMISSION_DENIED,
+                    canResume = result.reason == ScanFailureReason.PERMISSION_DENIED ||
+                        result.reason == ScanFailureReason.SCAN_ALREADY_ACTIVE,
                 )
             }
         }
     }
+
+    private fun parseResumeScanId(raw: String?): ScanId? =
+        raw?.takeIf { it.isNotBlank() }?.let { ScanId.of(it) }
 }

@@ -39,6 +39,7 @@ import com.spendsms.app.domain.model.TransferStatus
 import com.spendsms.app.presentation.common.AsyncUiState
 import com.spendsms.app.presentation.common.LoadingState
 import com.spendsms.app.presentation.common.MessageState
+import com.spendsms.app.presentation.common.RefreshOnResume
 import com.spendsms.app.presentation.common.SectionTitle
 import com.spendsms.app.presentation.common.UiFormatters
 
@@ -49,6 +50,7 @@ fun TransactionListScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
+    RefreshOnResume { viewModel.refresh() }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(stringResource(R.string.transactions_title), style = MaterialTheme.typography.headlineSmall)

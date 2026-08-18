@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spendsms.app.application.dashboard.DashboardService
 import com.spendsms.app.application.port.FinancialDataDeletionPort
+import com.spendsms.app.application.port.ParserBundleRepository
+import com.spendsms.app.application.port.ScanWorkScheduler
 import com.spendsms.app.application.port.sms.SmsPermissionPort
 import com.spendsms.app.data.preferences.UserPreferencesStore
 import com.spendsms.app.application.controlplane.ControlPlaneCoordinator
@@ -67,6 +69,8 @@ class DataDeletionViewModel @Inject constructor(
     private val deletionPort: FinancialDataDeletionPort,
     private val dashboardService: DashboardService,
     private val preferences: UserPreferencesStore,
+    private val scanWorkScheduler: ScanWorkScheduler,
+    private val parserBundleRepository: ParserBundleRepository,
 ) : ViewModel() {
 
     private val _phase = MutableStateFlow<DeletionPhase>(DeletionPhase.Confirm)
@@ -79,11 +83,11 @@ class DataDeletionViewModel @Inject constructor(
         viewModelScope.launch {
             _phase.value = DeletionPhase.Deleting
             runCatching {
+                scanWorkScheduler.cancel()
                 deletionPort.deleteAllAnalysedData()
                 dashboardService.invalidateCache()
                 preferences.clearAnalysisPeriod()
-                // Financial wipe retains parser_metadata and bundled rule assets.
-                _parserStillPresent.value = true
+                _parserStillPresent.value = parserBundleRepository.findActiveMetadata() != null
             }.onSuccess {
                 _phase.value = DeletionPhase.Done
             }.onFailure { error ->

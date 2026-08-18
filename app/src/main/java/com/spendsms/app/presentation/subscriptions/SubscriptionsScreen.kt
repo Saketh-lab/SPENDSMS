@@ -24,6 +24,7 @@ import com.spendsms.app.domain.subscriptions.Subscription
 import com.spendsms.app.presentation.common.AsyncUiState
 import com.spendsms.app.presentation.common.LoadingState
 import com.spendsms.app.presentation.common.MessageState
+import com.spendsms.app.presentation.common.RefreshOnResume
 import com.spendsms.app.presentation.common.SectionTitle
 import com.spendsms.app.presentation.common.UiFormatters
 
@@ -32,6 +33,7 @@ fun SubscriptionsScreen(
     viewModel: SubscriptionsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    RefreshOnResume { viewModel.refresh() }
     Column(
         modifier = Modifier
             .fillMaxSize()

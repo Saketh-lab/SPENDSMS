@@ -85,11 +85,11 @@ object ScanWorkOutcomeMapper {
                 scanId = result.state?.id,
                 reason = "PERMISSION_DENIED",
             )
-            ScanFailureReason.PARSER_UNAVAILABLE -> ScanWorkOutcome.Retry(
+            ScanFailureReason.PARSER_UNAVAILABLE -> ScanWorkOutcome.Failure(
                 scanId = result.state?.id,
                 reason = "PARSER_UNAVAILABLE",
             )
-            ScanFailureReason.SCAN_ALREADY_ACTIVE -> ScanWorkOutcome.Failure(
+            ScanFailureReason.SCAN_ALREADY_ACTIVE -> ScanWorkOutcome.Retry(
                 scanId = result.state?.id,
                 reason = "SCAN_ALREADY_ACTIVE",
             )

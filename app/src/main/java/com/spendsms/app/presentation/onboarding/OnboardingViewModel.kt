@@ -47,9 +47,9 @@ class BootstrapViewModel @Inject constructor(
             val completed = scanStateRepository.findLatestCompleted()
             val resumable = scanStateRepository.findResumable()
             _destination.value = when {
+                resumable != null -> BootstrapDestination.ScanPeriod
                 completed != null -> BootstrapDestination.Dashboard
-                resumable != null || permissionPort.hasReadSmsPermission() ->
-                    BootstrapDestination.ScanPeriod
+                permissionPort.hasReadSmsPermission() -> BootstrapDestination.ScanPeriod
                 else -> BootstrapDestination.Onboarding
             }
         }

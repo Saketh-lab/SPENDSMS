@@ -74,11 +74,22 @@ class ScanWorkOutcomeMapperTest {
     }
 
     @Test
-    fun parserUnavailable_isRetry() {
+    fun parserUnavailable_isNonRetryableFailure() {
         val outcome = ScanWorkOutcomeMapper.fromScanResult(
             ScanResult.Failed(null, ScanFailureReason.PARSER_UNAVAILABLE, "missing"),
         )
+        assertThat(outcome).isEqualTo(
+            ScanWorkOutcome.Failure(scanId = null, reason = "PARSER_UNAVAILABLE"),
+        )
+    }
+
+    @Test
+    fun scanAlreadyActive_isRetry() {
+        val outcome = ScanWorkOutcomeMapper.fromScanResult(
+            ScanResult.Failed(state, ScanFailureReason.SCAN_ALREADY_ACTIVE, "in process"),
+        )
         assertThat(outcome).isInstanceOf(ScanWorkOutcome.Retry::class.java)
+        assertThat((outcome as ScanWorkOutcome.Retry).reason).isEqualTo("SCAN_ALREADY_ACTIVE")
     }
 
     @Test

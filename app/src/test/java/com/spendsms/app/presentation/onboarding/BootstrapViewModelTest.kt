@@ -80,6 +80,41 @@ class BootstrapViewModelTest {
     }
 
     @Test
+    fun onboardedWithResumableAndCompleted_routesToScan() = runTest {
+        val preferences = mockk<UserPreferencesStore>()
+        every { preferences.onboardingCompleted } returns flowOf(true)
+        val scans = mockk<ScanStateRepository>()
+        val period = AnalysisPeriod(EpochMillis.of(1L), EpochMillis.of(2L))
+        coEvery { scans.findLatestCompleted() } returns ScanState(
+            id = ScanId.of("done"),
+            period = period,
+            lastProcessedMessageId = "9",
+            parserVersion = ParserVersion.of("v1"),
+            status = ScanStatus.COMPLETED,
+            processedCount = 9,
+            acceptedCount = 4,
+            startedAt = EpochMillis.of(1L),
+            completedAt = EpochMillis.of(2L),
+            updatedAt = EpochMillis.of(2L),
+        )
+        coEvery { scans.findResumable() } returns ScanState(
+            id = ScanId.of("resume"),
+            period = period,
+            lastProcessedMessageId = "3",
+            parserVersion = ParserVersion.of("v1"),
+            status = ScanStatus.RUNNING,
+            processedCount = 3,
+            acceptedCount = 2,
+            startedAt = EpochMillis.of(3L),
+            completedAt = null,
+            updatedAt = EpochMillis.of(4L),
+        )
+        val vm = BootstrapViewModel(preferences, scans, SmsPermissionPort { true }, mockControlPlane())
+        dispatcher.scheduler.advanceUntilIdle()
+        assertThat(vm.destination.value).isEqualTo(BootstrapDestination.ScanPeriod)
+    }
+
+    @Test
     fun bootstrap_runsInBackground_andDoesNotBlockRouting() = runTest {
         val controlPlane = mockk<ControlPlaneCoordinator>()
         coEvery { controlPlane.bootstrap() } returns ControlPlaneBootstrapResult.ParserDegraded("missing")

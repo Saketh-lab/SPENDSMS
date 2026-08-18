@@ -220,6 +220,36 @@ class RoomRepositoryTest {
     fun financialDeletion_clearsAnalysedData_keepsParserMetadata() {
         runBlocking {
             transactions.upsert(sampleTx("del-1", "fp-del"))
+            corrections.save(
+                UserCorrection(
+                    id = CorrectionId.of("c-del"),
+                    transactionId = TransactionId.of("del-1"),
+                    field = CorrectionField.CATEGORY,
+                    oldValue = SystemCategories.OTHER.value,
+                    newValue = SystemCategories.GROCERIES.value,
+                    applyToFuture = false,
+                    merchantMatchKey = null,
+                    createdAt = EpochMillis.of(1L),
+                    updatedAt = EpochMillis.of(1L),
+                ),
+            )
+            subscriptions.upsert(
+                Subscription(
+                    id = SubscriptionId.of("s-del"),
+                    merchantKey = MerchantKey.of("music"),
+                    merchantDisplayName = "Music",
+                    frequency = SubscriptionFrequency.MONTHLY,
+                    estimatedAmount = Money.ofMinorUnits(499_00L, CurrencyCode.INR),
+                    currency = CurrencyCode.INR,
+                    lastPaymentDate = EpochMillis.of(1L),
+                    estimatedNextDate = EpochMillis.of(2L),
+                    confidence = Confidence.of(0.8),
+                    status = SubscriptionStatus.SUSPECTED,
+                    evidenceTransactionIds = listOf(TransactionId.of("del-1")),
+                    createdAt = EpochMillis.of(1L),
+                    updatedAt = EpochMillis.of(1L),
+                ),
+            )
             scans.save(
                 ScanState(
                     id = ScanId.of("scan-1"),
@@ -247,12 +277,35 @@ class RoomRepositoryTest {
                 ),
                 ParserRulesDocument.of("{}"),
             )
+            val cachePeriod = AnalysisPeriod(EpochMillis.of(1L), EpochMillis.of(9_999L))
+            val zero = Money.zero()
+            dashboardCache.put(
+                DashboardResult(
+                    period = cachePeriod,
+                    grossSpending = Money.ofMinorUnits(100L, CurrencyCode.INR),
+                    netSpending = Money.ofMinorUnits(100L, CurrencyCode.INR),
+                    credits = zero,
+                    refunds = zero,
+                    transactionCount = 1,
+                    categoryTotals = emptyList(),
+                    monthlyTotals = emptyList(),
+                    merchantTotals = emptyList(),
+                    subscriptionTotals = SubscriptionTotals(zero, zero, 0),
+                    recentTransactions = emptyList(),
+                    suspectedSubscriptions = emptyList(),
+                    lastAnalysisAt = EpochMillis.of(5L),
+                ),
+            )
 
             deletion.deleteAllAnalysedData()
 
             assertThat(transactions.findById(TransactionId.of("del-1"))).isNull()
             assertThat(scans.findById(ScanId.of("scan-1"))).isNull()
+            assertThat(corrections.findByTransactionId(TransactionId.of("del-1"))).isEmpty()
+            assertThat(subscriptions.findById(SubscriptionId.of("s-del"))).isNull()
+            assertThat(dashboardCache.get(cachePeriod)).isNull()
             assertThat(parsers.findMetadata(version)).isNotNull()
+            assertThat(categories.getAll()).isNotEmpty()
         }
     }
 

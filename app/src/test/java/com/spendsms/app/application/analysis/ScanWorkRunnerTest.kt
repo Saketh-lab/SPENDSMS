@@ -26,6 +26,7 @@ class ScanWorkRunnerTest {
         scanCoordinator = coordinator,
         scanStateRepository = scans,
         permissionPort = permission,
+        completionHandler = mockk(relaxed = true),
     )
 
     @Test
@@ -44,10 +45,13 @@ class ScanWorkRunnerTest {
     fun success_delegatesToCoordinator() = runBlocking {
         coEvery { permission.hasReadSmsPermission() } returns true
         coEvery { scans.findResumable() } returns null
+        coEvery { scans.findLatestCompleted() } returns null
         val completed = sampleState(ScanStatus.COMPLETED, completedAt = EpochMillis.of(20L))
         coEvery { coordinator.startScan(any()) } returns ScanResult.Completed(completed, 0)
+        val completion = mockk<ScanCompletionHandler>(relaxed = true)
+        val completingRunner = ScanWorkRunner(coordinator, scans, permission, completion)
 
-        val outcome = runner.run(ScanWorkInput(period))
+        val outcome = completingRunner.run(ScanWorkInput(period))
 
         assertThat(outcome).isInstanceOf(ScanWorkOutcome.Success::class.java)
         coVerify {
@@ -55,6 +59,7 @@ class ScanWorkRunnerTest {
                 ScanRequest(period = period, resumeScanId = null, batchSize = DEFAULT_SCAN_BATCH_SIZE),
             )
         }
+        coVerify { completion.onScanCompleted(period, EpochMillis.of(20L)) }
     }
 
     @Test
@@ -100,6 +105,7 @@ class ScanWorkRunnerTest {
     fun providerError_mapsToRetry() = runBlocking {
         coEvery { permission.hasReadSmsPermission() } returns true
         coEvery { scans.findResumable() } returns null
+        coEvery { scans.findLatestCompleted() } returns null
         coEvery { coordinator.startScan(any()) } returns ScanResult.Interrupted(
             sampleState(ScanStatus.INTERRUPTED),
             0,
@@ -116,6 +122,7 @@ class ScanWorkRunnerTest {
     fun permissionRevoked_mapsToFailure() = runBlocking {
         coEvery { permission.hasReadSmsPermission() } returns true
         coEvery { scans.findResumable() } returns null
+        coEvery { scans.findLatestCompleted() } returns null
         coEvery { coordinator.startScan(any()) } returns ScanResult.Interrupted(
             sampleState(ScanStatus.INTERRUPTED),
             0,
@@ -130,9 +137,24 @@ class ScanWorkRunnerTest {
     }
 
     @Test
+    fun alreadyCompletedPeriod_skipsNewScan() = runBlocking {
+        coEvery { permission.hasReadSmsPermission() } returns true
+        val completed = sampleState(ScanStatus.COMPLETED, completedAt = EpochMillis.of(20L))
+        coEvery { scans.findResumable() } returns null
+        coEvery { scans.findLatestCompleted() } returns completed
+
+        val outcome = runner.run(ScanWorkInput(period))
+
+        assertThat(outcome).isInstanceOf(ScanWorkOutcome.Success::class.java)
+        assertThat((outcome as ScanWorkOutcome.Success).reason).isEqualTo("ALREADY_COMPLETED")
+        coVerify(exactly = 0) { coordinator.startScan(any()) }
+    }
+
+    @Test
     fun cancelled_mapsToSuccess() = runBlocking {
         coEvery { permission.hasReadSmsPermission() } returns true
         coEvery { scans.findResumable() } returns null
+        coEvery { scans.findLatestCompleted() } returns null
         coEvery { coordinator.startScan(any()) } returns ScanResult.Cancelled(
             sampleState(ScanStatus.CANCELLED, completedAt = EpochMillis.of(20L)),
             0,
