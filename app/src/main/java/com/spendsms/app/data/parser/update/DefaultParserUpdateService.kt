@@ -17,6 +17,8 @@ import com.spendsms.app.application.port.parser.ParserUpdateStateStore
 import com.spendsms.app.data.parser.AppVersionCompatibility
 import com.spendsms.app.data.parser.AppVersionProvider
 import com.spendsms.app.data.parser.ParserBundleClock
+import com.spendsms.app.application.port.config.ControlPlaneEndpoints
+import com.spendsms.app.data.config.ControlPlaneEndpointConfig
 import com.spendsms.app.domain.model.ParserMetadata
 import com.spendsms.app.domain.model.ParserVersion
 import com.spendsms.app.domain.parsing.ParserManifest
@@ -38,6 +40,7 @@ class DefaultParserUpdateService @Inject constructor(
     private val appVersionProvider: AppVersionProvider,
     private val appVersionCompatibility: AppVersionCompatibility,
     private val clock: ParserBundleClock,
+    private val endpoints: ControlPlaneEndpoints,
 ) : ParserUpdateService {
 
     override suspend fun ensureBundledParserReady(): ParserBundleActivationResult =
@@ -54,6 +57,14 @@ class DefaultParserUpdateService @Inject constructor(
 
         val activeBefore = repository.findActiveMetadata()
         val activeVersion = activeBefore?.parserVersion
+
+        if (!endpoints.isParserCdnConfigured) {
+            return ParserUpdateOutcome.Skipped(
+                reason = ParserUpdateSkipReason.FEATURE_DISABLED,
+                detail = "Parser CDN not configured",
+                activeVersion = activeVersion,
+            )
+        }
 
         if (!remoteConfig.getConfig().newParserVersionEnabled) {
             return ParserUpdateOutcome.Skipped(

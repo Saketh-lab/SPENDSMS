@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 import unittest
@@ -8,6 +9,7 @@ import unittest
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, ROOT)
 
+from http_util import SAFE_LOG, log_safe  # noqa: E402
 from validation import (  # noqa: E402
     ValidationFailure,
     parse_json_object,
@@ -104,6 +106,39 @@ class SupportTests(unittest.TestCase):
         }
         cleaned = validate_support(body, "018f2c80-0b53-7e53-bf26-f6a84d7e4d02")
         self.assertEqual("no_rule_match", cleaned["reason"])
+
+
+class LoggingTests(unittest.TestCase):
+    def test_log_safe_only_emits_allowlisted_fields(self) -> None:
+        records: list[str] = []
+
+        class Capture(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                records.append(record.getMessage())
+
+        handler = Capture()
+        SAFE_LOG.addHandler(handler)
+        try:
+            log_safe(
+                request_id_value="req-1",
+                endpoint="POST /v1/support/unsupported-format",
+                status=201,
+                error_code=None,
+                duration_ms=12,
+                app_version="0.1.0-phase0",
+            )
+        finally:
+            SAFE_LOG.removeHandler(handler)
+
+        self.assertEqual(1, len(records))
+        payload = json.loads(records[0])
+        self.assertEqual(
+            {"requestId", "endpoint", "status", "durationMs", "appVersion"},
+            set(payload),
+        )
+        blob = json.dumps(payload).lower()
+        for banned in ("sms", "amount", "merchant", "redactedtemplate", "body", "transaction"):
+            self.assertNotIn(banned, blob)
 
 
 if __name__ == "__main__":

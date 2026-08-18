@@ -30,6 +30,13 @@ data class AppRemoteConfig(
             minimumSupportedAppVersion = "0.1.0",
             configVersion = "bundled",
         )
+
+        /** Defaults when CDN/API BuildConfig placeholders are not configured. */
+        fun localOnlyDefaults(): AppRemoteConfig = bundledDefaults().copy(
+            newParserVersionEnabled = false,
+            supportSubmissionEnabled = false,
+            configVersion = "local",
+        )
     }
 }
 

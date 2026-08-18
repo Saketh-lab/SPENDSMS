@@ -83,8 +83,9 @@ class PortContractTest {
 
     @Test
     fun bundledRemoteConfig_isAvailableOffline() {
-        val config = AppRemoteConfig.bundledDefaults()
+        val config = AppRemoteConfig.localOnlyDefaults()
         assertThat(config.supportSubmissionEnabled).isFalse()
+        assertThat(config.newParserVersionEnabled).isFalse()
         assertThat(config.controlledImportEnabled).isTrue()
     }
 

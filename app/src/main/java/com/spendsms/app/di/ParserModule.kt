@@ -6,6 +6,8 @@ import com.spendsms.app.application.parser.ParserUpdateService
 import com.spendsms.app.application.port.config.RemoteConfigPort
 import com.spendsms.app.application.port.parser.ParserUpdateRemotePort
 import com.spendsms.app.application.port.parser.ParserUpdateStateStore
+import com.spendsms.app.application.port.config.ControlPlaneEndpoints
+import com.spendsms.app.data.config.ControlPlaneEndpointConfig
 import com.spendsms.app.data.config.BundledRemoteConfigPort
 import com.spendsms.app.data.parser.AppVersionProvider
 import com.spendsms.app.data.parser.AssetParserSigningPublicKeyProvider
@@ -64,6 +66,12 @@ abstract class ParserModule {
     abstract fun bindRemoteConfigPort(
         impl: BundledRemoteConfigPort,
     ): RemoteConfigPort
+
+    @Binds
+    @Singleton
+    abstract fun bindControlPlaneEndpoints(
+        impl: ControlPlaneEndpointConfig,
+    ): ControlPlaneEndpoints
 
     @Binds
     @Singleton

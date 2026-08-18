@@ -11,6 +11,7 @@ import com.spendsms.app.application.parser.ParserUpdateRejectReason
 import com.spendsms.app.application.parser.ParserUpdateSkipReason
 import com.spendsms.app.application.port.ParserRulesDocument
 import com.spendsms.app.application.port.config.AppRemoteConfig
+import com.spendsms.app.application.port.config.ControlPlaneEndpoints
 import com.spendsms.app.application.port.config.RemoteConfigPort
 import com.spendsms.app.application.port.parser.ManifestFetchResult
 import com.spendsms.app.application.port.parser.PackageDownloadResult
@@ -52,6 +53,7 @@ class ParserUpdateServiceTest {
     private lateinit var remote: FakeParserUpdateRemote
     private lateinit var stateStore: InMemoryParserUpdateStateStore
     private lateinit var remoteConfig: MutableRemoteConfigPort
+    private lateinit var endpoints: FakeControlPlaneEndpoints
     private lateinit var clock: MutableClock
     private lateinit var service: DefaultParserUpdateService
 
@@ -79,6 +81,7 @@ class ParserUpdateServiceTest {
         remote = FakeParserUpdateRemote()
         stateStore = InMemoryParserUpdateStateStore()
         remoteConfig = MutableRemoteConfigPort(AppRemoteConfig.bundledDefaults())
+        endpoints = FakeControlPlaneEndpoints(parserCdnConfigured = true)
         clock = MutableClock(1_700_000_000_000L)
         service = DefaultParserUpdateService(
             bundleManager = manager,
@@ -89,6 +92,7 @@ class ParserUpdateServiceTest {
             appVersionProvider = AppVersionProvider { "0.1.0-phase0" },
             appVersionCompatibility = AppVersionCompatibility(),
             clock = clock,
+            endpoints = endpoints,
         )
     }
 
@@ -289,6 +293,7 @@ class ParserUpdateServiceTest {
             appVersionProvider = AppVersionProvider { "0.1.0-phase0" },
             appVersionCompatibility = AppVersionCompatibility(),
             clock = clock,
+            endpoints = endpoints,
         )
 
         remote.manifestResult = ManifestFetchResult.Available(
@@ -356,6 +361,7 @@ class ParserUpdateServiceTest {
             appVersionProvider = AppVersionProvider { "0.1.0-phase0" },
             appVersionCompatibility = AppVersionCompatibility(),
             clock = clock,
+            endpoints = endpoints,
         )
         remote.manifestResult = ManifestFetchResult.Available(
             manifest = manifestFor(v2Json, version = "2026.08.13.11"),
@@ -391,6 +397,18 @@ class ParserUpdateServiceTest {
     fun featureFlagDisabled_skipsUpdate() = runBlocking {
         service.ensureBundledParserReady()
         remoteConfig.config = AppRemoteConfig.bundledDefaults().copy(newParserVersionEnabled = false)
+
+        val outcome = service.checkAndApplyUpdate(force = true)
+        assertThat(outcome).isInstanceOf(ParserUpdateOutcome.Skipped::class.java)
+        assertThat((outcome as ParserUpdateOutcome.Skipped).reason)
+            .isEqualTo(ParserUpdateSkipReason.FEATURE_DISABLED)
+        assertThat(remote.manifestCalls).isEqualTo(0)
+    }
+
+    @Test
+    fun parserCdnNotConfigured_skipsWithoutNetwork() = runBlocking {
+        service.ensureBundledParserReady()
+        endpoints.parserCdnConfigured = false
 
         val outcome = service.checkAndApplyUpdate(force = true)
         assertThat(outcome).isInstanceOf(ParserUpdateOutcome.Skipped::class.java)
@@ -496,6 +514,18 @@ private class InMemoryParserUpdateStateStore : ParserUpdateStateStore {
         highest = parserVersion
         if (etag != null) this.etag = etag
     }
+}
+
+private class FakeControlPlaneEndpoints(
+    var parserCdnConfigured: Boolean,
+    var apiConfigured: Boolean = false,
+) : ControlPlaneEndpoints {
+    override val isParserCdnConfigured: Boolean
+        get() = parserCdnConfigured
+    override val isApiConfigured: Boolean
+        get() = apiConfigured
+    override val isLocalOnlyMode: Boolean
+        get() = !isApiConfigured && !isParserCdnConfigured
 }
 
 private class MutableRemoteConfigPort(

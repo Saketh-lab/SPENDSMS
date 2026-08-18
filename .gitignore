@@ -14,8 +14,15 @@ captures/
 .cxx/
 .kotlin/
 
-# SpendSMS Phase-0 IaC (local synth artifacts only)
+# SpendSMS Phase-0 IaC
 infra/node_modules/
 infra/cdk.out/
 infra/dist/
 infra/.cdk.staging/
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/tfplan
+infra/terraform/*.plan
+infra/terraform/build/*.zip
+.tools/

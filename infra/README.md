@@ -1,51 +1,90 @@
-# SpendSMS Phase-0 AWS infrastructure (IaC only)
+# SpendSMS Phase-0 AWS infrastructure (Terraform)
 
-This directory is the **thin serverless control/observability plane** from Steps 2–4.
+Thin serverless control/observability plane from Steps 2–4. **Terraform HCL** replaces the prior CDK app; architecture and Prompt 15/15B hardening are unchanged.
 
-## Framework choice
+## Layout
 
-**AWS CDK v2 (TypeScript)** with Python 3.12 Lambda foundations.
-
-- SAM would be a smaller YAML file for API+Lambda, but CloudFront Origin Access Control, a customer-managed KMS key, HTTP API access logs, and consistent tagging are first-class in CDK.
-- Terraform was not chosen because the rest of this slice maps cleanly onto CloudFormation via `cdk synth`, which we can inspect without credentials.
-- A dedicated CDK bootstrap qualifier `spendsms` is set so a later deploy does **not** reuse another application’s default `hnb659fds` CDK toolkit bucket.
-
-## Isolation
-
-All resources are SpendSMS-named and tagged:
-
-- `Project=SpendSMS`
-- `Phase=Phase0`
-- `ManagedBy=IaC`
-
-This stack does not import, rename, or depend on other applications’ buckets, tables, APIs, or roles.
-
-## Do not deploy from Prompt 15
-
-Allowed:
-
-```bash
-cd infra
-npm ci
-npm run validate
+```text
+infra/
+  lambda/          # Python 3.12 handlers (shared with prior CDK)
+  static/          # Example parser/config object keys (not uploaded by IaC)
+  terraform/       # Official AWS provider — application resources only
+  scripts/         # Local validation helpers
 ```
 
-Forbidden here: `cdk deploy`, `cdk bootstrap`, `aws cloudformation deploy`, `aws s3 cp` to live buckets, or any create/update/delete of cloud resources.
+## Prerequisites
 
-## Prompt 14 URL mapping (after a later deploy)
+- Terraform >= 1.5
+- AWS CLI credentials for `ap-south-1` (plan/apply only)
+- Python 3.12+ (Lambda unit tests)
 
-| Android `BuildConfig` | Stack output |
+## Commands (validation only in this slice)
+
+```bash
+cd infra/terraform
+terraform fmt -check -recursive
+terraform init
+terraform validate
+terraform plan -out=tfplan
+```
+
+Static checks (no AWS):
+
+```bash
+./infra/scripts/validate-static.sh
+```
+
+## Default region
+
+`ap-south-1` via `variables.tf` (`aws_region`).
+
+## Tags
+
+Provider `default_tags`:
+
+- `Project = SpendSMS`
+- `Phase = Phase0`
+- `ManagedBy = Terraform`
+
+## State
+
+Local state file in `infra/terraform/` (gitignored). No S3 backend in Phase-0.
+
+## Outputs
+
+| Output | Android mapping |
 | --- | --- |
-| `PARSER_CDN_BASE_URL` | `https://<SpendSmsCdnDomain>/` |
-| `PARSER_MANIFEST_URL` | `https://<SpendSmsCdnDomain>/parser/manifest.json` |
-| `API_BASE_URL` | `SpendSmsApiBaseUrl` |
+| `cdn_domain` | `PARSER_CDN_BASE_URL` host |
+| `parser_manifest_url` | `PARSER_MANIFEST_URL` |
+| `remote_config_url` | remote config CDN URL |
+| `api_base_url` | `API_BASE_URL` |
+| `artifacts_bucket_name` | publish target |
+| `telemetry_table_name` | ops |
+| `support_table_name` | ops |
 
-Versioned packages: `https://<cdn>/parser/<parserVersion>/bundle.json`
+## KMS / CloudFront OAC
 
-## Region / account
+Initial CMK policy allows `cloudfront.amazonaws.com` decrypt when `AWS:SourceArn` matches `distribution/*` to avoid Terraform dependency cycles (same tradeoff as CDK).
 
-The template is environment-agnostic. Before a later deploy, lock:
+After first successful apply, tighten to this distribution only:
 
-1. AWS account (the existing one is fine if SpendSMS names/tags keep it isolated).
-2. Region — recommended `ap-south-1` (India). CloudFront remains global.
-3. `cdk bootstrap --qualifier spendsms` in that account/region (later prompt only).
+```bash
+DIST_ARN="$(terraform output -raw cloudfront_distribution_arn)"
+KEY_ID="$(aws kms list-aliases --query "Aliases[?AliasName=='alias/spendsms-phase0'].TargetKeyId" --output text)"
+aws kms get-key-policy --key-id "$KEY_ID" --policy-name default --output text > /tmp/spendsms-key-policy.json
+# Replace distribution/* with the exact DIST_ARN in the CloudFront decrypt statement.
+# aws kms put-key-policy --key-id "$KEY_ID" --policy-name default --policy file:///tmp/spendsms-key-policy.json
+```
+
+S3 `GetObject` is already restricted to this distribution (Allow + Deny-unless-OAC).
+
+## CDK → Terraform migration
+
+1. Do **not** delete CDK bootstrap buckets/stacks (`cdk-spendsms-*` toolkit).
+2. Inspect failed `SpendSMS-Phase0` CloudFormation stack and delete or retain partial resources before first `terraform apply` (see migration notes in finish report).
+3. Run `terraform plan` and resolve name conflicts (tables, Lambdas, KMS alias, API name).
+4. `terraform apply` only after cleanup/plan review.
+
+## Do not deploy from validation prompts
+
+Forbidden: `terraform apply`, deleting bootstrap resources, auto-cleaning failed CFN stacks.
