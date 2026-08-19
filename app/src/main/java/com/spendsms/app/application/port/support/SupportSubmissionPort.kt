@@ -2,6 +2,7 @@ package com.spendsms.app.application.port.support
 
 import com.spendsms.app.domain.model.EpochMillis
 import com.spendsms.app.domain.model.ParserVersion
+import com.spendsms.app.domain.privacy.SensitivePayloadPatterns
 
 /**
  * Reason values for unsupported-format support submissions (Step-4).
@@ -44,6 +45,9 @@ data class RedactedUnsupportedFormatSubmission(
         require(redactedTemplate.isNotBlank()) { "redactedTemplate must not be blank" }
         require(redactedTemplate.length <= 4096) {
             "redactedTemplate must be <= 4096 characters"
+        }
+        require(!SensitivePayloadPatterns.looksLikeUnredactedSmsOrFinancialSecret(redactedTemplate)) {
+            "redactedTemplate must not contain unredacted SMS or financial secrets"
         }
     }
 }

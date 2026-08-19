@@ -35,6 +35,24 @@ interface UserCorrectionDao {
         fieldName: String,
     ): List<UserCorrectionEntity>
 
+    @Query(
+        """
+        SELECT * FROM user_corrections
+        WHERE apply_to_future = 1
+          AND merchant_match_key = :merchantMatchKey
+        ORDER BY created_at DESC
+        """,
+    )
+    suspend fun findFutureRulesForMerchant(merchantMatchKey: String): List<UserCorrectionEntity>
+
+    @Query(
+        """
+        SELECT DISTINCT transaction_id FROM user_corrections
+        WHERE field_name = :fieldName
+        """,
+    )
+    suspend fun findTransactionIdsWithField(fieldName: String): List<String>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: UserCorrectionEntity)
 

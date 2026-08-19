@@ -387,6 +387,68 @@ class RoomRepositoryTest {
         }
     }
 
+    @Test
+    fun largeVolume_findInPeriodAndNearStayWithinBudget() {
+        runBlocking {
+            val volume = 1_200
+            val rows = (1..volume).map { i ->
+                sampleTx(
+                    id = "vol-$i",
+                    fingerprint = "fp-vol-$i",
+                    amount = 50L + (i % 7),
+                    timestamp = 1_000L + i,
+                )
+            }
+            transactions.upsertAll(rows)
+
+            val queryStarted = System.nanoTime()
+            val inPeriod = transactions.findInPeriod(
+                AnalysisPeriod(EpochMillis.of(1_000L), EpochMillis.of(1_000L + volume)),
+            )
+            val near = transactions.findNear(
+                amount = Money.ofMinorUnits(50L, CurrencyCode.INR),
+                around = EpochMillis.of(1_200L),
+                windowMillis = 50_000L,
+            )
+            val excluded = corrections.findTransactionIdsWithField(CorrectionField.NOT_A_TRANSACTION)
+            val elapsedMs = (System.nanoTime() - queryStarted) / 1_000_000L
+
+            assertThat(inPeriod).hasSize(volume)
+            assertThat(near).isNotEmpty()
+            assertThat(excluded).isEmpty()
+            assertThat(elapsedMs).isLessThan(8_000L)
+        }
+    }
+
+    @Test
+    fun findTransactionIdsWithField_isBulkNotPerRow() {
+        runBlocking {
+            (1..80).forEach { i ->
+                transactions.upsert(sampleTx("bulk-$i", "fp-bulk-$i"))
+            }
+            (1..12).forEach { i ->
+                corrections.save(
+                    UserCorrection(
+                        id = CorrectionId.of("c-bulk-$i"),
+                        transactionId = TransactionId.of("bulk-$i"),
+                        field = CorrectionField.NOT_A_TRANSACTION,
+                        oldValue = "false",
+                        newValue = "true",
+                        applyToFuture = false,
+                        merchantMatchKey = null,
+                        createdAt = EpochMillis.of(1L),
+                        updatedAt = EpochMillis.of(1L),
+                    ),
+                )
+            }
+            val started = System.nanoTime()
+            val ids = corrections.findTransactionIdsWithField(CorrectionField.NOT_A_TRANSACTION)
+            val elapsedMs = (System.nanoTime() - started) / 1_000_000L
+            assertThat(ids).hasSize(12)
+            assertThat(elapsedMs).isLessThan(1_000L)
+        }
+    }
+
     private fun sampleTx(
         id: String,
         fingerprint: String,

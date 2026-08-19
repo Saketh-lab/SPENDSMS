@@ -102,7 +102,7 @@ class ScanViewModelTest {
         )
         vm.selectPreset(PeriodPreset.LAST_30_DAYS)
         vm.startSelectedPeriod()
-        dispatcher.scheduler.advanceUntilIdle()
+        awaitNotRunning(vm)
 
         val completed = vm.phase.value as ScanPhase.Completed
         assertThat(completed.acceptedCount).isEqualTo(4)
@@ -151,7 +151,7 @@ class ScanViewModelTest {
             permission = SmsPermissionPort { true },
             scans = scans,
         )
-        dispatcher.scheduler.advanceUntilIdle()
+        awaitNotRunning(vm)
         assertThat(vm.phase.value).isInstanceOf(ScanPhase.Completed::class.java)
         coVerify {
             coordinator.startScan(
@@ -176,7 +176,7 @@ class ScanViewModelTest {
         )
         val vm = viewModel(coordinator = coordinator, permission = SmsPermissionPort { true })
         vm.startSelectedPeriod()
-        dispatcher.scheduler.advanceUntilIdle()
+        awaitNotRunning(vm)
         val failed = vm.phase.value as ScanPhase.Failed
         assertThat(failed.message).contains("permission")
     }
@@ -200,6 +200,14 @@ class ScanViewModelTest {
             completionHandler = completion,
             scanWorkScheduler = scheduler,
         )
+    }
+
+    private fun awaitNotRunning(vm: ScanViewModel, timeoutMs: Long = 5_000L) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (vm.phase.value !is ScanPhase.Running) return
+            Thread.sleep(15)
+        }
     }
 
     private fun completedState(period: AnalysisPeriod): ScanState = ScanState(

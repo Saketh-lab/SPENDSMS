@@ -260,6 +260,21 @@ class SpendSmsDatabaseTest {
         }
     }
 
+    @Test
+    fun schema_includesAmountTimeAndCorrectionFieldIndexes() {
+        val names = mutableListOf<String>()
+        db.query("SELECT name FROM sqlite_master WHERE type = 'index'", emptyArray()).use { cursor ->
+            val nameIndex = cursor.getColumnIndex("name")
+            while (cursor.moveToNext()) {
+                names += cursor.getString(nameIndex)
+            }
+        }
+        assertThat(names).containsAtLeast(
+            "idx_transactions_amount_time",
+            "idx_corrections_field_transaction",
+        )
+    }
+
     private fun sampleTransaction(
         id: String,
         fingerprint: String,

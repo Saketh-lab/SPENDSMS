@@ -8,6 +8,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkRequest
 import androidx.work.workDataOf
 import com.spendsms.app.application.analysis.DEFAULT_SCAN_BATCH_SIZE
+import com.spendsms.app.application.analysis.MAX_SCAN_BATCH_SIZE
 import com.spendsms.app.application.analysis.ScanScheduleRequest
 import com.spendsms.app.application.analysis.ScanWorkInput
 import com.spendsms.app.application.analysis.ScanWorkOutcome
@@ -61,7 +62,7 @@ object ScanWorkContract {
         if (start < 0L || end < 0L || start > end) return null
         val resume = data.getString(KEY_RESUME_SCAN_ID)?.takeIf { it.isNotBlank() }?.let(ScanId::of)
         val batchSize = data.getInt(KEY_BATCH_SIZE, DEFAULT_SCAN_BATCH_SIZE)
-        if (batchSize <= 0) return null
+            .coerceIn(1, MAX_SCAN_BATCH_SIZE)
         return ScanWorkInput(
             period = AnalysisPeriod(EpochMillis.of(start), EpochMillis.of(end)),
             resumeScanId = resume,

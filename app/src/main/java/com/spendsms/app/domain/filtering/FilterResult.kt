@@ -13,7 +13,7 @@ sealed interface FilterResult {
 
     data class Accept(val message: RawSmsMessage) : FilterResult {
         override fun toString(): String =
-            "Accept(sourceMessageId=${message.sourceMessageId}, sender=${message.sender})"
+            "Accept(sourceMessageId=${message.sourceMessageId}, sender=***)"
     }
 }
 

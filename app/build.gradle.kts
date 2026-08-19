@@ -110,7 +110,7 @@ dependencies {
 
     implementation(libs.retrofit)
     implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
+    debugImplementation(libs.okhttp.logging)
     implementation(libs.retrofit.kotlinx.serialization)
     implementation(libs.kotlinx.serialization.json)
 

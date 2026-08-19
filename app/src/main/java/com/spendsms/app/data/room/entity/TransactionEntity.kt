@@ -42,6 +42,10 @@ import androidx.room.PrimaryKey
             name = "idx_transactions_fingerprint",
         ),
         Index(value = ["source_message_hash"], name = "idx_transactions_source_hash"),
+        Index(
+            value = ["amount_minor_units", "currency", "transaction_timestamp"],
+            name = "idx_transactions_amount_time",
+        ),
         Index(value = ["category_id"]),
         Index(value = ["possible_duplicate_of"]),
     ],

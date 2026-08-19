@@ -10,6 +10,7 @@ import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.workDataOf
 import com.google.common.truth.Truth.assertThat
+import com.spendsms.app.application.analysis.MAX_SCAN_BATCH_SIZE
 import com.spendsms.app.application.analysis.ScanWorkInput
 import com.spendsms.app.application.analysis.ScanWorkOutcome
 import com.spendsms.app.application.analysis.ScanWorkRunner
@@ -49,6 +50,16 @@ class ScanSmsWorkerTest {
         val data = ScanWorkContract.toInputData(input)
         assertThat(data.keyValueMap.keys).containsNoneOf("body", "sms", "sms_body")
         assertThat(ScanWorkContract.parseInput(data)).isEqualTo(input)
+    }
+
+    @Test
+    fun parseInput_coercesOversizedBatchToMax() {
+        val data = workDataOf(
+            ScanWorkContract.KEY_PERIOD_START to period.start.toEpochMillis,
+            ScanWorkContract.KEY_PERIOD_END to period.end.toEpochMillis,
+            ScanWorkContract.KEY_BATCH_SIZE to 10_000,
+        )
+        assertThat(ScanWorkContract.parseInput(data)?.batchSize).isEqualTo(MAX_SCAN_BATCH_SIZE)
     }
 
     @Test

@@ -10,6 +10,9 @@ data class ScanWorkInput(
 ) {
     init {
         require(batchSize > 0) { "batchSize must be > 0" }
+        require(batchSize <= MAX_SCAN_BATCH_SIZE) {
+            "batchSize must be <= $MAX_SCAN_BATCH_SIZE to bound memory"
+        }
     }
 }
 
@@ -20,6 +23,9 @@ data class ScanScheduleRequest(
 ) {
     init {
         require(batchSize > 0) { "batchSize must be > 0" }
+        require(batchSize <= MAX_SCAN_BATCH_SIZE) {
+            "batchSize must be <= $MAX_SCAN_BATCH_SIZE to bound memory"
+        }
     }
 
     fun toWorkInput(): ScanWorkInput = ScanWorkInput(

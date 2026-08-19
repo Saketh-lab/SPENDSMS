@@ -98,9 +98,7 @@ class TransactionClassificationService @Inject constructor(
 
     private suspend fun loadFutureCorrections(merchant: Merchant?): List<UserCorrection> {
         if (merchant == null) return emptyList()
-        return FUTURE_FIELDS.flatMap { field ->
-            userCorrectionRepository.findFutureRules(merchant.key, field)
-        }
+        return userCorrectionRepository.findFutureRulesForMerchant(merchant.key)
     }
 
     private fun latest(
@@ -116,14 +114,4 @@ class TransactionClassificationService @Inject constructor(
 
     private fun parseTransferStatus(raw: String): TransferStatus? =
         runCatching { TransferStatus.valueOf(raw.trim().uppercase()) }.getOrNull()
-
-    companion object {
-        private val FUTURE_FIELDS = listOf(
-            CorrectionField.MERCHANT,
-            CorrectionField.CATEGORY,
-            CorrectionField.DIRECTION,
-            CorrectionField.TRANSFER_STATUS,
-            CorrectionField.NOT_A_TRANSACTION,
-        )
-    }
 }

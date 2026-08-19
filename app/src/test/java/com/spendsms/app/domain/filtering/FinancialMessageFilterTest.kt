@@ -70,6 +70,7 @@ class FinancialMessageFilterTest {
         val result = filter.filter(sms("EX-BANK", body), knownSenders)
         assertThat(result.toString()).doesNotContain(body)
         assertThat(result.toString()).doesNotContain("PRIVATE_SHOP")
+        assertThat(result.toString()).doesNotContain("EX-BANK")
     }
 
     private fun sms(sender: String, body: String): RawSmsMessage =

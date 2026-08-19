@@ -30,6 +30,9 @@ class PortContractTest {
             body = "Debited INR 100",
         )
         assertThat(sms.body).isEqualTo("Debited INR 100")
+        assertThat(sms.toString()).doesNotContain("Debited INR 100")
+        assertThat(sms.toString()).doesNotContain("EX-BANK")
+        assertThat(sms.toString()).contains("body=***")
 
         val transactionFields = Transaction::class.java.declaredFields.map { it.name }
         assertThat(transactionFields).doesNotContain("body")
@@ -76,6 +79,22 @@ class PortContractTest {
                 redactionVersion = "1",
                 reason = UnsupportedFormatReason.NO_RULE_MATCH,
                 redactedTemplate = "Debited [AMOUNT]",
+                parserVersion = null,
+            )
+        }
+    }
+
+    @Test
+    fun supportSubmission_rejectsUnredactedSmsTemplate() {
+        assertThrows(IllegalArgumentException::class.java) {
+            RedactedUnsupportedFormatSubmission(
+                submissionId = "s1",
+                idempotencyKey = "k1",
+                consentedAt = EpochMillis.of(1L),
+                previewConfirmed = true,
+                redactionVersion = "1",
+                reason = UnsupportedFormatReason.NO_RULE_MATCH,
+                redactedTemplate = "Rs.1,250.50 debited at SWIGGY from A/c XX1234",
                 parserVersion = null,
             )
         }

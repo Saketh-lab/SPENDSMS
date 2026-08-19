@@ -37,6 +37,8 @@ class InboxSmsQueryTest {
         val message = InboxSmsQuery.mapRow("9", "EX-BANK", 1_000L, "SECRET_SMS_BODY")
         assertThat(message).isNotNull()
         assertThat(message!!.toString()).doesNotContain("SECRET_SMS_BODY")
+        assertThat(message.toString()).doesNotContain("EX-BANK")
         assertThat(message.toString()).contains("body=***")
+        assertThat(message.toString()).contains("sender=***")
     }
 }

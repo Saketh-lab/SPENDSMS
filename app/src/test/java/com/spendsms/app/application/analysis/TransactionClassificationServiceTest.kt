@@ -21,6 +21,7 @@ import com.spendsms.app.domain.model.TransferStatus
 import com.spendsms.app.domain.semantics.SpendingRole
 import com.spendsms.app.domain.semantics.TransactionSemantics
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import org.junit.Test
 
@@ -130,7 +131,7 @@ class TransactionClassificationServiceTest {
     fun classify_loadsFutureRulesFromRepository() = kotlinx.coroutines.runBlocking {
         val repo = mockk<com.spendsms.app.application.port.UserCorrectionRepository>()
         coEvery {
-            repo.findFutureRules(MerchantKey.of("swiggy"), CorrectionField.CATEGORY)
+            repo.findFutureRulesForMerchant(MerchantKey.of("swiggy"))
         } returns listOf(
             correction(
                 CorrectionField.CATEGORY,
@@ -139,9 +140,6 @@ class TransactionClassificationServiceTest {
                 MerchantKey.of("swiggy"),
             ),
         )
-        coEvery {
-            repo.findFutureRules(MerchantKey.of("swiggy"), match { it != CorrectionField.CATEGORY })
-        } returns emptyList()
 
         val wired = TransactionClassificationService(
             merchantNormalizer = MerchantNormalizer(),
@@ -151,6 +149,8 @@ class TransactionClassificationServiceTest {
         )
         val classified = wired.classify(candidate(merchantRaw = "SWIGGY"))
         assertThat(classified.categoryId).isEqualTo(SystemCategories.GROCERIES)
+        coVerify(exactly = 1) { repo.findFutureRulesForMerchant(MerchantKey.of("swiggy")) }
+        coVerify(exactly = 0) { repo.findFutureRules(match { true }, match { true }) }
     }
 
     private fun candidate(

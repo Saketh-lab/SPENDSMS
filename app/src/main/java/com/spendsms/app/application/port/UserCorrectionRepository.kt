@@ -20,6 +20,12 @@ interface UserCorrectionRepository {
         field: CorrectionField,
     ): List<UserCorrection>
 
+    /** One-shot load of future-apply rules for a merchant (all fields). */
+    suspend fun findFutureRulesForMerchant(merchantMatchKey: MerchantKey): List<UserCorrection>
+
+    /** Bulk lookup used by dashboard/subscription recompute — avoids per-row correction queries. */
+    suspend fun findTransactionIdsWithField(field: CorrectionField): Set<TransactionId>
+
     suspend fun save(correction: UserCorrection): UserCorrection
 
     suspend fun deleteByTransactionId(transactionId: TransactionId)

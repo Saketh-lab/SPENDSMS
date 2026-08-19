@@ -502,6 +502,12 @@ private class InMemoryCorrectionRepo(
     ): List<UserCorrection> = rows.filter {
         it.applyToFuture && it.merchantMatchKey == merchantMatchKey && it.field == field
     }
+
+    override suspend fun findFutureRulesForMerchant(merchantMatchKey: MerchantKey): List<UserCorrection> =
+        rows.filter { it.applyToFuture && it.merchantMatchKey == merchantMatchKey }
+
+    override suspend fun findTransactionIdsWithField(field: CorrectionField): Set<TransactionId> =
+        rows.filter { it.field == field }.map { it.transactionId }.toSet()
     override suspend fun save(correction: UserCorrection): UserCorrection {
         rows += correction
         return correction

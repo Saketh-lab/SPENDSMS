@@ -44,6 +44,7 @@ class DashboardCalculator @Inject constructor(
         val categoryBuckets = linkedMapOf<String, MutableMoneyCount>()
         val monthlyBuckets = linkedMapOf<String, Long>()
         val merchantBuckets = linkedMapOf<String, MutableMerchantBucket>()
+        val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
 
         for (tx in inPeriod) {
             val role = spendingRole(tx, excludedTransactionIds)
@@ -52,7 +53,7 @@ class DashboardCalculator @Inject constructor(
                 SpendingRole.GROSS_EXPENSE -> {
                     gross += amount
                     addCategory(categoryBuckets, tx, amount)
-                    addMonth(monthlyBuckets, tx, amount)
+                    addMonth(monthlyBuckets, tx, amount, utcCalendar)
                     addMerchant(merchantBuckets, tx, amount)
                 }
                 SpendingRole.CREDIT -> credits += amount
@@ -189,8 +190,9 @@ class DashboardCalculator @Inject constructor(
         buckets: MutableMap<String, Long>,
         tx: Transaction,
         amount: Money,
+        calendar: Calendar,
     ) {
-        val key = yearMonthUtc(tx.timestamp)
+        val key = yearMonthUtc(tx.timestamp, calendar)
         buckets[key] = (buckets[key] ?: 0L) + amount.amountMinorUnits
     }
 
@@ -207,11 +209,10 @@ class DashboardCalculator @Inject constructor(
         bucket.count += 1
     }
 
-    private fun yearMonthUtc(timestamp: EpochMillis): String {
-        val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-        cal.timeInMillis = timestamp.toEpochMillis
-        val year = cal.get(Calendar.YEAR)
-        val month = cal.get(Calendar.MONTH) + 1
+    private fun yearMonthUtc(timestamp: EpochMillis, calendar: Calendar): String {
+        calendar.timeInMillis = timestamp.toEpochMillis
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
         return "%04d-%02d".format(year, month)
     }
 

@@ -7,6 +7,7 @@ import com.spendsms.app.domain.model.PaymentMethod
 import com.spendsms.app.domain.model.TransactionCandidate
 import com.spendsms.app.domain.model.TransactionDirection
 import com.spendsms.app.domain.sms.RawSmsMessage
+import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 import javax.inject.Inject
@@ -19,6 +20,8 @@ import javax.inject.Singleton
 class DeclarativeTransactionParser @Inject constructor(
     private val confidencePolicy: ConfidencePolicy,
 ) : TransactionParser {
+
+    private val compiledPatterns = ConcurrentHashMap<String, Pattern>()
 
     override fun parse(message: RawSmsMessage, rules: DeclarativeParserRules): ParseResult {
         return try {
@@ -87,11 +90,7 @@ class DeclarativeTransactionParser @Inject constructor(
         pattern: TransactionPatternRule,
         senderMatched: Boolean,
     ): Extraction? {
-        val compiled = try {
-            Pattern.compile(pattern.regex, Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
-        } catch (_: PatternSyntaxException) {
-            return null
-        }
+        val compiled = compiledPattern(pattern.regex) ?: return null
         val matcher = compiled.matcher(message.body)
         if (!matcher.find()) return null
 
@@ -194,5 +193,16 @@ class DeclarativeTransactionParser @Inject constructor(
                 confidence = confidence,
                 parserVersion = rules.parserVersion,
             )
+    }
+
+    private fun compiledPattern(regex: String): Pattern? {
+        compiledPatterns[regex]?.let { return it }
+        return try {
+            Pattern.compile(regex, Pattern.CASE_INSENSITIVE or Pattern.DOTALL).also {
+                compiledPatterns.putIfAbsent(regex, it)
+            }
+        } catch (_: PatternSyntaxException) {
+            null
+        }
     }
 }

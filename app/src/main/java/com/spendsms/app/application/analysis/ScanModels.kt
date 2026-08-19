@@ -4,7 +4,8 @@ import com.spendsms.app.domain.model.AnalysisPeriod
 import com.spendsms.app.domain.model.ScanId
 import com.spendsms.app.domain.model.ScanState
 
-const val DEFAULT_SCAN_BATCH_SIZE: Int = 50
+const val DEFAULT_SCAN_BATCH_SIZE: Int = 100
+const val MAX_SCAN_BATCH_SIZE: Int = 250
 
 data class ScanRequest(
     val period: AnalysisPeriod,
@@ -13,6 +14,9 @@ data class ScanRequest(
 ) {
     init {
         require(batchSize > 0) { "batchSize must be > 0" }
+        require(batchSize <= MAX_SCAN_BATCH_SIZE) {
+            "batchSize must be <= $MAX_SCAN_BATCH_SIZE to bound memory"
+        }
     }
 }
 

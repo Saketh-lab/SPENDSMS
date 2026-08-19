@@ -32,7 +32,10 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder().build()
+    fun provideOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            // Never attach HttpLoggingInterceptor: request/response bodies must not hit logcat.
+            .build()
 
     @Provides
     @Singleton

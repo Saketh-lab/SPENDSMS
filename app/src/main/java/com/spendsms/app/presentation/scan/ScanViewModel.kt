@@ -21,6 +21,7 @@ import com.spendsms.app.presentation.common.PeriodPreset
 import com.spendsms.app.presentation.common.toAnalysisPeriod
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -120,7 +121,7 @@ class ScanViewModel @Inject constructor(
         activePeriod = period
         scanJob?.cancel()
         _phase.value = ScanPhase.Running(ScanUiProgress())
-        scanJob = viewModelScope.launch {
+        scanJob = viewModelScope.launch(Dispatchers.Default) {
             runCatching {
                 scanWorkScheduler.enqueue(
                     ScanScheduleRequest(

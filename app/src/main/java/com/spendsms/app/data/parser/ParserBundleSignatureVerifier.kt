@@ -39,7 +39,7 @@ class ParserBundleSignatureVerifier @Inject constructor(
                 SignatureOutcome.Invalid("ECDSA signature verification failed")
             }
         } catch (e: Exception) {
-            SignatureOutcome.Invalid("Signature verification error: ${e.message}")
+            SignatureOutcome.Invalid("Signature verification error: ${e::class.java.simpleName}")
         }
     }
 

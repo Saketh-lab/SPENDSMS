@@ -9,7 +9,6 @@ import com.spendsms.app.domain.model.EpochMillis
 import com.spendsms.app.domain.model.MerchantKey
 import com.spendsms.app.domain.model.SubscriptionId
 import com.spendsms.app.domain.model.SubscriptionStatus
-import com.spendsms.app.domain.model.TransactionId
 import com.spendsms.app.domain.subscriptions.DetectedSubscription
 import com.spendsms.app.domain.subscriptions.Subscription
 import com.spendsms.app.domain.subscriptions.SubscriptionDetector
@@ -51,7 +50,9 @@ class SubscriptionDetectionService @Inject constructor(
         } else {
             transactionRepository.findInPeriod(period)
         }
-        val excluded = excludedNotATransactionIds(transactions.map { it.id })
+        val excluded = userCorrectionRepository.findTransactionIdsWithField(
+            CorrectionField.NOT_A_TRANSACTION,
+        )
         val detected = detector.detect(
             transactions = transactions,
             excludedTransactionIds = excluded,
@@ -112,18 +113,5 @@ class SubscriptionDetectionService @Inject constructor(
         val old = existing.evidenceTransactionIds.toSet()
         val newIds = incoming.evidenceTransactionIds.toSet()
         return newIds.any { it !in old }
-    }
-
-    private suspend fun excludedNotATransactionIds(
-        transactionIds: List<TransactionId>,
-    ): Set<TransactionId> {
-        val excluded = mutableSetOf<TransactionId>()
-        for (id in transactionIds) {
-            val corrections = userCorrectionRepository.findByTransactionId(id)
-            if (corrections.any { it.field == CorrectionField.NOT_A_TRANSACTION }) {
-                excluded += id
-            }
-        }
-        return excluded
     }
 }

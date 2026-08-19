@@ -22,7 +22,7 @@ data class EphemeralSmsMessage(
     }
 
     override fun toString(): String =
-        "EphemeralSmsMessage(sourceMessageId=$sourceMessageId, sender=$sender, receivedAt=$receivedAt, body=***)"
+        "EphemeralSmsMessage(sourceMessageId=$sourceMessageId, sender=***, receivedAt=$receivedAt, body=***)"
 }
 
 data class SmsBatchQuery(

@@ -30,6 +30,7 @@ class LocalSecurityTest {
         val second = provider.getOrCreatePassphrase()
         assertThat(first).isEqualTo(second)
         assertThat(first.size).isEqualTo(32)
+        assertThat(first.toList()).isNotEqualTo(ByteArray(32).toList())
         assertThat(provider.hasStoredPassphrase()).isTrue()
         assertThat(store.contains(DatabaseKeyProvider.PREF_PASSPHRASE)).isTrue()
     }

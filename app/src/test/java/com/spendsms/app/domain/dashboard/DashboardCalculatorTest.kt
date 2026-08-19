@@ -144,6 +144,26 @@ class DashboardCalculatorTest {
         assertThat(result.monthlyTotals[1].total.amountMinorUnits).isEqualTo(20_00L)
     }
 
+    @Test
+    fun calculate_largeTransactionVolumeStaysWithinBudget() {
+        val txs = (1..2_000).map { i ->
+            tx(
+                id = "v$i",
+                direction = TransactionDirection.DEBIT,
+                amount = 100L + i,
+                at = 2_000L + i,
+                category = SystemCategories.FOOD_AND_DINING,
+                merchant = "swiggy",
+            )
+        }
+        val started = System.nanoTime()
+        val result = calculator.calculate(period, txs, emptyList())
+        val elapsedMs = (System.nanoTime() - started) / 1_000_000L
+        assertThat(result.transactionCount).isEqualTo(2_000)
+        assertThat(result.grossSpending.amountMinorUnits).isGreaterThan(0L)
+        assertThat(elapsedMs).isLessThan(3_000L)
+    }
+
     private fun tx(
         id: String,
         direction: TransactionDirection,

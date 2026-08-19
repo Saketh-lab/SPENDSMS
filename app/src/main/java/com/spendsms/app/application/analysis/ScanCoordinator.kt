@@ -21,6 +21,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.yield
 
 /**
  * Foreground local scan orchestration (Step-3 Scan Coordinator).
@@ -138,6 +139,7 @@ class ScanCoordinator @Inject constructor(
         preloadedRules: DeclarativeParserRules? = null,
     ): ScanResult {
         cancelRequested.remove(initial.id.value)
+        val boundedBatch = batchSize.coerceIn(1, MAX_SCAN_BATCH_SIZE)
         var isolatedFailures = 0
         var state = initial
         try {
@@ -184,7 +186,7 @@ class ScanCoordinator @Inject constructor(
                         SmsBatchQuery(
                             period = state.period,
                             afterMessageId = state.lastProcessedMessageId,
-                            limit = batchSize,
+                            limit = boundedBatch,
                         ),
                     )
                 } catch (e: SmsAccessException.PermissionDenied) {
@@ -204,7 +206,7 @@ class ScanCoordinator @Inject constructor(
                 var processed = state.processedCount
                 var accepted = state.acceptedCount
                 var lastId = state.lastProcessedMessageId
-                for (message in batch.messages) {
+                for ((index, message) in batch.messages.withIndex()) {
                     if (cancelRequested.contains(state.id.value)) {
                         state = persist(
                             state.copy(
@@ -223,6 +225,7 @@ class ScanCoordinator @Inject constructor(
                     if (outcome == MessageOutcome.ACCEPTED) accepted += 1
                     if (outcome == MessageOutcome.ISOLATED_FAILURE) isolatedFailures += 1
                     lastId = message.sourceMessageId
+                    if (index and 15 == 15) yield()
                 }
                 if (batch.nextAfterMessageId != null) {
                     lastId = batch.nextAfterMessageId
@@ -236,6 +239,7 @@ class ScanCoordinator @Inject constructor(
                     ),
                     onProgress,
                 )
+                yield()
                 if (batch.exhausted) break
                 if (batch.messages.isEmpty() && batch.nextAfterMessageId == null) break
             }

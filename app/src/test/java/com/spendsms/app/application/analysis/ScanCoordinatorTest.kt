@@ -342,6 +342,19 @@ class ScanCoordinatorTest {
         assertThat(txs.rows).hasSize(2)
     }
 
+    @Test
+    fun scanRequest_rejectsOversizedBatch() {
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            ScanRequest(period, batchSize = MAX_SCAN_BATCH_SIZE + 1)
+        }
+    }
+
+    @Test
+    fun scanRequest_acceptsMaxBoundedBatch() {
+        val request = ScanRequest(period, batchSize = MAX_SCAN_BATCH_SIZE)
+        assertThat(request.batchSize).isEqualTo(MAX_SCAN_BATCH_SIZE)
+    }
+
     private fun coordinator(
         source: SmsMessageSource,
         permission: SmsPermissionPort = SmsPermissionPort { true },
@@ -456,7 +469,7 @@ class ScanCoordinatorTest {
     )
 }
 
-private fun loadRegressionRules(): DeclarativeParserRules {
+internal fun loadRegressionRules(): DeclarativeParserRules {
     val codec = ParserRulesCodec(
         Json {
             ignoreUnknownKeys = false
@@ -475,7 +488,7 @@ private class MutablePermission(var granted: Boolean) : SmsPermissionPort {
     override fun hasReadSmsPermission(): Boolean = granted
 }
 
-private class InMemorySmsMessageSource(
+internal class InMemorySmsMessageSource(
     private val messages: List<EphemeralSmsMessage>,
 ) : SmsMessageSource {
     var beforeRead: (Int) -> Unit = {}
@@ -498,7 +511,7 @@ private class InMemorySmsMessageSource(
     }
 }
 
-private class InMemoryScanStateRepository : ScanStateRepository {
+internal class InMemoryScanStateRepository : ScanStateRepository {
     private val rows = mutableMapOf<String, ScanState>()
 
     override suspend fun findById(id: ScanId): ScanState? = rows[id.value]
@@ -528,7 +541,7 @@ private class InMemoryScanStateRepository : ScanStateRepository {
     }
 }
 
-private class ScanTestTransactionRepository : TransactionRepository {
+internal class ScanTestTransactionRepository : TransactionRepository {
     val rows = mutableListOf<Transaction>()
 
     override suspend fun findById(id: TransactionId): Transaction? = rows.find { it.id == id }
@@ -586,7 +599,7 @@ private class ScanTestTransactionRepository : TransactionRepository {
     }
 }
 
-private class FakeParserBundleManager(
+internal class FakeParserBundleManager(
     private val rules: DeclarativeParserRules,
 ) : ParserBundleManager {
     override fun validateSignedBundle(bundleJsonUtf8: String): ParserBundleValidationResult =

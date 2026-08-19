@@ -10,7 +10,6 @@ import com.spendsms.app.domain.dashboard.DashboardResult
 import com.spendsms.app.domain.model.AnalysisPeriod
 import com.spendsms.app.domain.model.CorrectionField
 import com.spendsms.app.domain.model.CurrencyCode
-import com.spendsms.app.domain.model.TransactionId
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -56,7 +55,9 @@ class DashboardService @Inject constructor(
         currency: CurrencyCode = CurrencyCode.INR,
     ): DashboardResult {
         val transactions = transactionRepository.findInPeriod(period)
-        val excluded = excludedNotATransactionIds(transactions.map { it.id })
+        val excluded = userCorrectionRepository.findTransactionIdsWithField(
+            CorrectionField.NOT_A_TRANSACTION,
+        )
         val subscriptions = subscriptionRepository.listAll()
         val lastAnalysis = scanStateRepository.findLatestCompleted()?.completedAt
         return calculator.calculate(
@@ -67,18 +68,5 @@ class DashboardService @Inject constructor(
             lastAnalysisAt = lastAnalysis,
             currency = currency,
         )
-    }
-
-    private suspend fun excludedNotATransactionIds(
-        transactionIds: List<TransactionId>,
-    ): Set<TransactionId> {
-        val excluded = mutableSetOf<TransactionId>()
-        for (id in transactionIds) {
-            val corrections = userCorrectionRepository.findByTransactionId(id)
-            if (corrections.any { it.field == CorrectionField.NOT_A_TRANSACTION }) {
-                excluded += id
-            }
-        }
-        return excluded
     }
 }

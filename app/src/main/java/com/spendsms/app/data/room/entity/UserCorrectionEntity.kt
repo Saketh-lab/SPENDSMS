@@ -18,6 +18,10 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index(value = ["transaction_id"], name = "idx_corrections_transaction"),
+        Index(
+            value = ["field_name", "transaction_id"],
+            name = "idx_corrections_field_transaction",
+        ),
         // Partial WHERE apply_to_future = 1 is created in SpendSmsDatabaseCallback.
         Index(
             value = ["merchant_match_key", "field_name"],

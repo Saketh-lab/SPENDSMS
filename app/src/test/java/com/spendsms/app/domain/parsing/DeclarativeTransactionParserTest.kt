@@ -162,6 +162,27 @@ class DeclarativeTransactionParserTest {
         assertThat(candidate.sourceMessageHash).doesNotContain("SECRET")
     }
 
+    @Test
+    fun parse_throughputOnSyntheticInbox_staysWithinBudget() {
+        val messages = (1..2_000).map { i ->
+            sms(
+                sender = "EX-BANK",
+                body = "Rs.${10 + (i % 90)}.00 debited at SWIGGY on 10-08-2026. Ref $i",
+                id = "msg-$i",
+                receivedAt = 1_700_000_000_000L + i,
+            )
+        }
+        val started = System.nanoTime()
+        var success = 0
+        for (message in messages) {
+            val result = parser.parse(message, rules)
+            if (result is ParseResult.Success) success += 1
+        }
+        val elapsedMs = (System.nanoTime() - started) / 1_000_000L
+        assertThat(success).isEqualTo(2_000)
+        assertThat(elapsedMs).isLessThan(8_000L)
+    }
+
     private fun sms(
         sender: String,
         body: String,

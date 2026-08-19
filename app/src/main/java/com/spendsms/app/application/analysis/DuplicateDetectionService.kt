@@ -48,7 +48,23 @@ class DuplicateDetectionService @Inject constructor(
         val bySource = transactionRepository.findBySourceMessageHash(
             classified.candidate.sourceMessageHash,
         )
+        if (bySource != null) {
+            return detector.evaluate(
+                classified = classified,
+                existingBySourceHash = bySource,
+                existingByFingerprint = null,
+                nearby = emptyList(),
+            )
+        }
         val byFingerprint = transactionRepository.findByFingerprint(fingerprint)
+        if (byFingerprint != null) {
+            return detector.evaluate(
+                classified = classified,
+                existingBySourceHash = null,
+                existingByFingerprint = byFingerprint,
+                nearby = emptyList(),
+            )
+        }
         val nearby = transactionRepository.findNear(
             amount = classified.amount,
             around = classified.candidate.transactionTimestamp,
@@ -63,8 +79,8 @@ class DuplicateDetectionService @Inject constructor(
         }
         return detector.evaluate(
             classified = classified,
-            existingBySourceHash = bySource,
-            existingByFingerprint = byFingerprint,
+            existingBySourceHash = null,
+            existingByFingerprint = null,
             nearby = nearby,
             userDuplicateOverride = override,
         )

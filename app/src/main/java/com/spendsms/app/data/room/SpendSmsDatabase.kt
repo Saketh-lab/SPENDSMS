@@ -57,7 +57,7 @@ abstract class SpendSmsDatabase : RoomDatabase() {
     abstract fun dashboardCacheDao(): DashboardCacheDao
 
     companion object {
-        const val VERSION: Int = 1
+        const val VERSION: Int = 2
         const val NAME: String = "spendsms.db"
 
         fun databaseFile(context: Context): File =
@@ -70,13 +70,16 @@ abstract class SpendSmsDatabase : RoomDatabase() {
          */
         fun buildEncrypted(context: Context, passphrase: ByteArray): SpendSmsDatabase {
             System.loadLibrary("sqlcipher")
-            val factory = SupportOpenHelperFactory(passphrase.copyOf())
+            val material = passphrase.copyOf()
+            val factory = SupportOpenHelperFactory(material)
+            passphrase.fill(0)
             return Room.databaseBuilder(
                 context.applicationContext,
                 SpendSmsDatabase::class.java,
                 databaseFile(context).absolutePath,
             )
                 .openHelperFactory(factory)
+                .addMigrations(SpendSmsMigrations.MIGRATION_1_2)
                 .addCallback(SpendSmsDatabaseCallback())
                 .build()
         }

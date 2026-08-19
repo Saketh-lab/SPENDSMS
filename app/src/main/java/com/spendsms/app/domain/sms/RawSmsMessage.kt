@@ -21,5 +21,5 @@ data class RawSmsMessage(
     }
 
     override fun toString(): String =
-        "RawSmsMessage(sourceMessageId=$sourceMessageId, sender=$sender, receivedAt=$receivedAt, body=***)"
+        "RawSmsMessage(sourceMessageId=$sourceMessageId, sender=***, receivedAt=$receivedAt, body=***)"
 }

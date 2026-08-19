@@ -79,6 +79,33 @@ class DuplicateDetectionServiceTest {
         assertThat(result.outcome).isEqualTo(DuplicateOutcome.InsertUnique)
     }
 
+    @Test
+    fun evaluate_exactRematch_skipsNearQuery() = runBlocking {
+        val repo = InMemoryTransactionRepository()
+        val service = service(repo, ids = listOf("tx-a", "tx-unused"))
+        val classified = classified(sourceHash = "sms-same")
+        service.resolve(classified, EpochMillis.of(1L))
+        val nearAfterInsert = repo.findNearCalls
+        assertThat(nearAfterInsert).isEqualTo(1)
+        service.resolve(classified, EpochMillis.of(2L))
+        assertThat(repo.findNearCalls).isEqualTo(nearAfterInsert)
+        assertThat(repo.rows).hasSize(1)
+    }
+
+    @Test
+    fun evaluate_fingerprintRematch_skipsNearQuery() = runBlocking {
+        val repo = InMemoryTransactionRepository()
+        val service = service(repo, ids = listOf("tx-bank", "tx-unused"))
+        val bank = classified(sourceHash = "sms-bank", referenceHash = "upi-99", institution = "Bank A")
+        val upi = classified(sourceHash = "sms-upi", referenceHash = "upi-99", institution = "UPI")
+        service.resolve(bank, EpochMillis.of(1L))
+        val nearAfterInsert = repo.findNearCalls
+        assertThat(nearAfterInsert).isEqualTo(1)
+        service.resolve(upi, EpochMillis.of(2L))
+        assertThat(repo.findNearCalls).isEqualTo(nearAfterInsert)
+        assertThat(repo.rows).hasSize(1)
+    }
+
     private fun service(
         repo: InMemoryTransactionRepository,
         ids: List<String>,
@@ -99,6 +126,7 @@ class DuplicateDetectionServiceTest {
 
 private class InMemoryTransactionRepository : TransactionRepository {
     val rows = mutableListOf<Transaction>()
+    var findNearCalls: Int = 0
 
     override suspend fun findById(id: TransactionId): Transaction? =
         rows.find { it.id == id }
@@ -143,9 +171,12 @@ private class InMemoryTransactionRepository : TransactionRepository {
         amount: Money,
         around: EpochMillis,
         windowMillis: Long,
-    ): List<Transaction> = rows.filter {
-        it.amount == amount &&
-            abs(it.timestamp.toEpochMillis - around.toEpochMillis) <= windowMillis
+    ): List<Transaction> {
+        findNearCalls += 1
+        return rows.filter {
+            it.amount == amount &&
+                abs(it.timestamp.toEpochMillis - around.toEpochMillis) <= windowMillis
+        }
     }
 
     override suspend fun findByMerchantKey(

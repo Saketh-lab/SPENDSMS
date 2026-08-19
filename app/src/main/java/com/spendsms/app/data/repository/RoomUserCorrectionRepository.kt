@@ -32,6 +32,14 @@ class RoomUserCorrectionRepository @Inject constructor(
             fieldName = field.name,
         ).map { it.toDomain() }
 
+    override suspend fun findFutureRulesForMerchant(merchantMatchKey: MerchantKey): List<UserCorrection> =
+        userCorrectionDao.findFutureRulesForMerchant(merchantMatchKey.value).map { it.toDomain() }
+
+    override suspend fun findTransactionIdsWithField(field: CorrectionField): Set<TransactionId> =
+        userCorrectionDao.findTransactionIdsWithField(field.name)
+            .map { TransactionId.of(it) }
+            .toSet()
+
     override suspend fun save(correction: UserCorrection): UserCorrection {
         userCorrectionDao.upsert(correction.toEntity())
         return correction
